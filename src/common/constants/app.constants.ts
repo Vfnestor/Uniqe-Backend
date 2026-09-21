@@ -6,3 +6,6 @@ export const APP_VERSION =
 
 export const API_PREFIX =
   "api/v1";
+
+export const DEFAULT_PORT =
+  4000;

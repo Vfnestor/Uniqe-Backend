@@ -10,6 +10,18 @@ import {
   AppModule,
 } from "./app.module";
 
+import {
+  API_PREFIX,
+} from "./common/constants";
+
+import {
+  HttpExceptionFilter,
+} from "./common/filters";
+
+import {
+  ResponseInterceptor,
+} from "./common/interceptors";
+
 async function bootstrap() {
   const app =
     await NestFactory.create(
@@ -17,7 +29,7 @@ async function bootstrap() {
     );
 
   app.setGlobalPrefix(
-    "api/v1",
+    API_PREFIX,
   );
 
   app.useGlobalPipes(
@@ -26,6 +38,14 @@ async function bootstrap() {
       transform: true,
       forbidNonWhitelisted: true,
     }),
+  );
+
+  app.useGlobalFilters(
+    new HttpExceptionFilter(),
+  );
+
+  app.useGlobalInterceptors(
+    new ResponseInterceptor(),
   );
 
   app.enableCors({

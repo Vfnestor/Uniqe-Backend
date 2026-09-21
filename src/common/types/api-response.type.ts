@@ -4,5 +4,6 @@ export type ApiResponse<
   success: boolean;
   data?: T;
   message?: string;
+  statusCode?: number;
   timestamp: string;
 };

@@ -3,19 +3,18 @@ import {
   Get,
 } from "@nestjs/common";
 
+import {
+  HealthService,
+} from "./health.service";
+
 @Controller("health")
 export class HealthController {
+  constructor(
+    private readonly healthService: HealthService,
+  ) {}
+
   @Get()
-  getHealth() {
-    return {
-      status: "ok",
-      service: "Uniqe Backend",
-      version: "1.0.0",
-      environment:
-        process.env.NODE_ENV ||
-        "development",
-      timestamp:
-        new Date().toISOString(),
-    };
+  async getHealth() {
+    return this.healthService.check();
   }
 }

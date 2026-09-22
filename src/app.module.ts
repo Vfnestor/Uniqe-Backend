@@ -18,6 +18,10 @@ import {
   AuthModule,
 } from "./modules/auth/auth.module";
 
+import {
+  UsersModule,
+} from "./modules/users/users.module";
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +33,8 @@ import {
     HealthModule,
 
     AuthModule,
+
+    UsersModule,
   ],
 })
 export class AppModule {}

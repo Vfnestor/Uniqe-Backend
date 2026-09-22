@@ -47,6 +47,7 @@ model User {
   preferences   UserPreferences?
   favorites     Favorite[]
   notifications Notification[]
+  refreshTokens RefreshToken[]
 }
 
 model UserProfile {
@@ -57,25 +58,25 @@ model UserProfile {
   bio         String?
   avatarUrl   String?
 
-  language    String           @default("en")
-  theme       ThemePreference  @default(SYSTEM)
+  language    String          @default("en")
+  theme       ThemePreference @default(SYSTEM)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserPreferences {
-  id                    String          @id @default(cuid())
-  userId                String          @unique
+  id                   String          @id @default(cuid())
+  userId               String          @unique
 
-  theme                 ThemePreference @default(SYSTEM)
-  language              String          @default("en")
-  notificationsEnabled  Boolean         @default(true)
+  theme                ThemePreference @default(SYSTEM)
+  language             String          @default("en")
+  notificationsEnabled Boolean         @default(true)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -88,14 +89,14 @@ model Favorite {
   title       String
   description String
 
-  category    String
-  href        String
-  icon        String?
+  category String
+  href     String
+  icon     String?
 
-  metadata    Json?
+  metadata Json?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -110,17 +111,35 @@ model Notification {
   title    String
   message  String
 
-  read     Boolean  @default(false)
+  read Boolean @default(false)
 
   href     String?
   icon     String?
   metadata Json?
 
   createdAt DateTime  @default(now())
-  readAt    DateTime?
+  readAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, read])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  tokenId   String    @unique
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }

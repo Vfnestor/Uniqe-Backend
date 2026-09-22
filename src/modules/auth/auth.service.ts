@@ -56,7 +56,10 @@ export class AuthService {
     }
 
     const password =
-      await hash(dto.password, 12);
+      await hash(
+        dto.password,
+        12,
+      );
 
     const user =
       await this.prisma.user.create({
@@ -97,7 +100,8 @@ export class AuthService {
     }
 
     if (
-      user.status !== "ACTIVE"
+      user.status !==
+      "ACTIVE"
     ) {
       throw new UnauthorizedException(
         "User account is not active.",
@@ -121,6 +125,41 @@ export class AuthService {
     );
   }
 
+  async getSession(
+    userId: string,
+  ) {
+    const user =
+      await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+    if (
+      !user ||
+      user.status !==
+        "ACTIVE"
+    ) {
+      throw new UnauthorizedException(
+        "User session is invalid.",
+      );
+    }
+
+    return {
+      authenticated: true,
+      user:
+        this.removePassword(
+          user,
+        ),
+    };
+  }
+
+  async logout() {
+    return {
+      success: true,
+    };
+  }
+
   private async createAuthResult(
     user: {
       id: string;
@@ -128,8 +167,13 @@ export class AuthService {
       email: string;
       password: string;
       avatarUrl: string | null;
-      status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
-      role: "USER" | "ADMIN";
+      status:
+        | "ACTIVE"
+        | "INACTIVE"
+        | "SUSPENDED";
+      role:
+        | "USER"
+        | "ADMIN";
       createdAt: Date;
       updatedAt: Date;
     },
@@ -158,11 +202,11 @@ export class AuthService {
         },
       );
 
-    const authenticatedUser: AuthenticatedUser =
-      this.removePassword(user);
-
     return {
-      user: authenticatedUser,
+      user:
+        this.removePassword(
+          user,
+        ),
       tokens: {
         accessToken,
         refreshToken,
@@ -177,8 +221,13 @@ export class AuthService {
       email: string;
       password: string;
       avatarUrl: string | null;
-      status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
-      role: "USER" | "ADMIN";
+      status:
+        | "ACTIVE"
+        | "INACTIVE"
+        | "SUSPENDED";
+      role:
+        | "USER"
+        | "ADMIN";
       createdAt: Date;
       updatedAt: Date;
     },

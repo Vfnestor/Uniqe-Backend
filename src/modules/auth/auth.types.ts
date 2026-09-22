@@ -27,3 +27,19 @@ export type JwtRefreshPayload = {
   type: "refresh";
   jti: string;
 };
+
+export type AuthUserResponse = {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  status: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthSessionResponse = {
+  authenticated: true;
+  user: AuthUserResponse;
+};

@@ -6,6 +6,10 @@ import {
 } from "@nestjs/common";
 
 import {
+  ConfigService,
+} from "@nestjs/config";
+
+import {
   JwtService,
 } from "@nestjs/jwt";
 
@@ -13,12 +17,9 @@ import type {
   Request,
 } from "express";
 
-type JwtPayload = {
-  sub: string;
-  email?: string;
-  role?: string;
-  type?: string;
-};
+import type {
+  JwtAccessPayload,
+} from "../auth.types";
 
 @Injectable()
 export class JwtAuthGuard
@@ -26,6 +27,7 @@ export class JwtAuthGuard
 {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async canActivate(
@@ -36,7 +38,7 @@ export class JwtAuthGuard
         .switchToHttp()
         .getRequest<
           Request & {
-            user?: JwtPayload;
+            user?: JwtAccessPayload;
           }
         >();
 
@@ -55,16 +57,25 @@ export class JwtAuthGuard
     }
 
     const token =
-      authorization.substring(7);
+      authorization
+        .substring(7)
+        .trim();
+
+    if (!token) {
+      throw new UnauthorizedException(
+        "Authentication required.",
+      );
+    }
 
     try {
       const payload =
-        await this.jwtService.verifyAsync<JwtPayload>(
+        await this.jwtService.verifyAsync<JwtAccessPayload>(
           token,
           {
             secret:
-              process.env
-                .JWT_ACCESS_SECRET,
+              this.configService.getOrThrow<string>(
+                "JWT_ACCESS_SECRET",
+              ),
           },
         );
 

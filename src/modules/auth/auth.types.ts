@@ -25,4 +25,5 @@ export type JwtAccessPayload = {
 export type JwtRefreshPayload = {
   sub: string;
   type: "refresh";
+  jti: string;
 };

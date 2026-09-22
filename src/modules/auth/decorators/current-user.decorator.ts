@@ -7,12 +7,9 @@ import type {
   Request,
 } from "express";
 
-type CurrentUserPayload = {
-  sub: string;
-  email?: string;
-  role?: string;
-  type?: string;
-};
+import type {
+  JwtAccessPayload,
+} from "../auth.types";
 
 export const CurrentUser =
   createParamDecorator(
@@ -25,7 +22,7 @@ export const CurrentUser =
           .switchToHttp()
           .getRequest<
             Request & {
-              user?: CurrentUserPayload;
+              user?: JwtAccessPayload;
             }
           >();
 

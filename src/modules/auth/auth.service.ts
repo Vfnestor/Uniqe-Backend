@@ -5,8 +5,16 @@ import {
 } from "@nestjs/common";
 
 import {
+  ConfigService,
+} from "@nestjs/config";
+
+import {
   JwtService,
 } from "@nestjs/jwt";
+
+import {
+  randomUUID,
+} from "crypto";
 
 import {
   PrismaService,
@@ -18,13 +26,25 @@ import {
 } from "bcrypt";
 
 import type {
+  User,
+} from "@prisma/client";
+
+import type {
   LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
   RegisterDto,
 } from "./dto";
+
+import {
+  AUTH_ACCESS_TOKEN_EXPIRES_IN,
+  AUTH_REFRESH_TOKEN_EXPIRES_IN,
+} from "./auth.constants";
 
 import type {
   AuthResult,
   AuthenticatedUser,
+  JwtRefreshPayload,
 } from "./auth.types";
 
 @Injectable()
@@ -32,6 +52,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(
@@ -125,6 +146,100 @@ export class AuthService {
     );
   }
 
+  async refresh(
+    dto: RefreshTokenDto,
+  ): Promise<AuthResult> {
+    const refreshSecret =
+      this.configService.getOrThrow<string>(
+        "JWT_REFRESH_SECRET",
+      );
+
+    let payload:
+      | JwtRefreshPayload
+      | undefined;
+
+    try {
+      payload =
+        await this.jwtService.verifyAsync<JwtRefreshPayload>(
+          dto.refreshToken,
+          {
+            secret: refreshSecret,
+          },
+        );
+    } catch {
+      throw new UnauthorizedException(
+        "Invalid or expired refresh token.",
+      );
+    }
+
+    if (
+      payload.type !==
+        "refresh" ||
+      !payload.sub ||
+      !payload.jti
+    ) {
+      throw new UnauthorizedException(
+        "Invalid refresh token.",
+      );
+    }
+
+    const storedToken =
+      await this.prisma.refreshToken.findUnique({
+        where: {
+          tokenId: payload.jti,
+        },
+        include: {
+          user: true,
+        },
+      });
+
+    if (
+      !storedToken ||
+      storedToken.revokedAt ||
+      storedToken.expiresAt <=
+        new Date()
+    ) {
+      throw new UnauthorizedException(
+        "Refresh token is no longer valid.",
+      );
+    }
+
+    const tokenMatches =
+      await compare(
+        dto.refreshToken,
+        storedToken.tokenHash,
+      );
+
+    if (!tokenMatches) {
+      throw new UnauthorizedException(
+        "Refresh token is invalid.",
+      );
+    }
+
+    if (
+      storedToken.user.status !==
+      "ACTIVE"
+    ) {
+      throw new UnauthorizedException(
+        "User account is not active.",
+      );
+    }
+
+    await this.prisma.refreshToken.update({
+      where: {
+        id: storedToken.id,
+      },
+      data: {
+        revokedAt:
+          new Date(),
+      },
+    });
+
+    return this.createAuthResult(
+      storedToken.user,
+    );
+  }
+
   async getSession(
     userId: string,
   ) {
@@ -154,29 +269,56 @@ export class AuthService {
     };
   }
 
-  async logout() {
+  async logout(
+    dto: LogoutDto,
+  ) {
+    const refreshSecret =
+      this.configService.getOrThrow<string>(
+        "JWT_REFRESH_SECRET",
+      );
+
+    try {
+      const payload =
+        await this.jwtService.verifyAsync<JwtRefreshPayload>(
+          dto.refreshToken,
+          {
+            secret: refreshSecret,
+          },
+        );
+
+      if (
+        payload.type !==
+          "refresh" ||
+        !payload.jti
+      ) {
+        return {
+          success: true,
+        };
+      }
+
+      await this.prisma.refreshToken.updateMany({
+        where: {
+          tokenId: payload.jti,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt:
+            new Date(),
+        },
+      });
+    } catch {
+      return {
+        success: true,
+      };
+    }
+
     return {
       success: true,
     };
   }
 
   private async createAuthResult(
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      password: string;
-      avatarUrl: string | null;
-      status:
-        | "ACTIVE"
-        | "INACTIVE"
-        | "SUSPENDED";
-      role:
-        | "USER"
-        | "ADMIN";
-      createdAt: Date;
-      updatedAt: Date;
-    },
+    user: User,
   ): Promise<AuthResult> {
     const accessToken =
       await this.jwtService.signAsync(
@@ -187,20 +329,58 @@ export class AuthService {
           type: "access",
         },
         {
-          expiresIn: "15m",
+          secret:
+            this.configService.getOrThrow<string>(
+              "JWT_ACCESS_SECRET",
+            ),
+          expiresIn:
+            AUTH_ACCESS_TOKEN_EXPIRES_IN,
         },
       );
+
+    const tokenId =
+      randomUUID();
 
     const refreshToken =
       await this.jwtService.signAsync(
         {
           sub: user.id,
           type: "refresh",
+          jti: tokenId,
         },
         {
-          expiresIn: "30d",
+          secret:
+            this.configService.getOrThrow<string>(
+              "JWT_REFRESH_SECRET",
+            ),
+          expiresIn:
+            AUTH_REFRESH_TOKEN_EXPIRES_IN,
         },
       );
+
+    const refreshTokenHash =
+      await hash(
+        refreshToken,
+        12,
+      );
+
+    const expiresAt =
+      new Date();
+
+    expiresAt.setDate(
+      expiresAt.getDate() +
+        30,
+    );
+
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenId,
+        tokenHash:
+          refreshTokenHash,
+        expiresAt,
+      },
+    });
 
     return {
       user:
@@ -215,22 +395,7 @@ export class AuthService {
   }
 
   private removePassword(
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      password: string;
-      avatarUrl: string | null;
-      status:
-        | "ACTIVE"
-        | "INACTIVE"
-        | "SUSPENDED";
-      role:
-        | "USER"
-        | "ADMIN";
-      createdAt: Date;
-      updatedAt: Date;
-    },
+    user: User,
   ): AuthenticatedUser {
     const {
       password: _password,

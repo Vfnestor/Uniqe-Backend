@@ -12,6 +12,8 @@ import {
 
 import {
   LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
   RegisterDto,
 } from "./dto";
 
@@ -47,6 +49,15 @@ export class AuthController {
     );
   }
 
+  @Post("refresh")
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+  ) {
+    return this.authService.refresh(
+      dto,
+    );
+  }
+
   @Get("session")
   @UseGuards(JwtAuthGuard)
   async session(
@@ -61,7 +72,11 @@ export class AuthController {
   }
 
   @Post("logout")
-  async logout() {
-    return this.authService.logout();
+  async logout(
+    @Body() dto: LogoutDto,
+  ) {
+    return this.authService.logout(
+      dto,
+    );
   }
 }

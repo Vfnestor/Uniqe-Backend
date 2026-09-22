@@ -34,7 +34,11 @@ export class JwtAuthGuard
     const request =
       context
         .switchToHttp()
-        .getRequest<Request>();
+        .getRequest<
+          Request & {
+            user?: JwtPayload;
+          }
+        >();
 
     const authorization =
       request.headers.authorization;
@@ -73,11 +77,8 @@ export class JwtAuthGuard
         );
       }
 
-      (
-        request as Request & {
-          user?: JwtPayload;
-        }
-      ).user = payload;
+      request.user =
+        payload;
 
       return true;
     } catch {

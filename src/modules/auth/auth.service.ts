@@ -17,10 +17,6 @@ import {
 } from "crypto";
 
 import {
-  PrismaService,
-} from "../../database/prisma.service";
-
-import {
   compare,
   hash,
 } from "bcrypt";
@@ -28,6 +24,10 @@ import {
 import type {
   User,
 } from "@prisma/client";
+
+import {
+  PrismaService,
+} from "../../database/prisma.service";
 
 import type {
   LoginDto,
@@ -38,12 +38,17 @@ import type {
 
 import {
   AUTH_ACCESS_TOKEN_EXPIRES_IN,
+  AUTH_REFRESH_TOKEN_DAYS,
   AUTH_REFRESH_TOKEN_EXPIRES_IN,
 } from "./auth.constants";
 
+import {
+  mapAuthUser,
+} from "./auth.mapper";
+
 import type {
   AuthResult,
-  AuthenticatedUser,
+  AuthSessionResponse,
   JwtRefreshPayload,
 } from "./auth.types";
 
@@ -163,7 +168,8 @@ export class AuthService {
         await this.jwtService.verifyAsync<JwtRefreshPayload>(
           dto.refreshToken,
           {
-            secret: refreshSecret,
+            secret:
+              refreshSecret,
           },
         );
     } catch {
@@ -242,7 +248,7 @@ export class AuthService {
 
   async getSession(
     userId: string,
-  ) {
+  ): Promise<AuthSessionResponse> {
     const user =
       await this.prisma.user.findUnique({
         where: {
@@ -263,7 +269,7 @@ export class AuthService {
     return {
       authenticated: true,
       user:
-        this.removePassword(
+        mapAuthUser(
           user,
         ),
     };
@@ -282,7 +288,8 @@ export class AuthService {
         await this.jwtService.verifyAsync<JwtRefreshPayload>(
           dto.refreshToken,
           {
-            secret: refreshSecret,
+            secret:
+              refreshSecret,
           },
         );
 
@@ -369,7 +376,7 @@ export class AuthService {
 
     expiresAt.setDate(
       expiresAt.getDate() +
-        30,
+        AUTH_REFRESH_TOKEN_DAYS,
     );
 
     await this.prisma.refreshToken.create({
@@ -384,7 +391,7 @@ export class AuthService {
 
     return {
       user:
-        this.removePassword(
+        mapAuthUser(
           user,
         ),
       tokens: {
@@ -392,16 +399,5 @@ export class AuthService {
         refreshToken,
       },
     };
-  }
-
-  private removePassword(
-    user: User,
-  ): AuthenticatedUser {
-    const {
-      password: _password,
-      ...safeUser
-    } = user;
-
-    return safeUser;
   }
 }

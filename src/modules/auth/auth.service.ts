@@ -210,6 +210,15 @@ export class AuthService {
       );
     }
 
+    if (
+      storedToken.userId !==
+      payload.sub
+    ) {
+      throw new UnauthorizedException(
+        "Refresh token subject is invalid.",
+      );
+    }
+
     const tokenMatches =
       await compare(
         dto.refreshToken,
@@ -294,30 +303,23 @@ export class AuthService {
         );
 
       if (
-        payload.type !==
-          "refresh" ||
-        !payload.jti
+        payload.type ===
+          "refresh" &&
+        payload.jti
       ) {
-        return {
-          success: true,
-        };
+        await this.prisma.refreshToken.updateMany({
+          where: {
+            tokenId:
+              payload.jti,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt:
+              new Date(),
+          },
+        });
       }
-
-      await this.prisma.refreshToken.updateMany({
-        where: {
-          tokenId: payload.jti,
-          revokedAt: null,
-        },
-        data: {
-          revokedAt:
-            new Date(),
-        },
-      });
-    } catch {
-      return {
-        success: true,
-      };
-    }
+    } catch {}
 
     return {
       success: true,

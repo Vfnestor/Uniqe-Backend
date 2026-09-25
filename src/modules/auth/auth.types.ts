@@ -2,17 +2,39 @@ import type {
   User,
 } from "@prisma/client";
 
+export type AuthUserRole =
+  | "user"
+  | "owner";
+
+export type AuthUserStatus =
+  | "active"
+  | "inactive"
+  | "suspended";
+
+export type AuthUserResponse = {
+  id: string;
+  name: string;
+  email: string;
+  role: AuthUserRole;
+  status: AuthUserStatus;
+  avatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AuthTokens = {
   accessToken: string;
   refreshToken: string;
 };
 
-export type AuthenticatedUser =
-  Omit<User, "password">;
-
 export type AuthResult = {
-  user: AuthenticatedUser;
+  user: AuthUserResponse;
   tokens: AuthTokens;
+};
+
+export type AuthSessionResponse = {
+  authenticated: true;
+  user: AuthUserResponse;
 };
 
 export type JwtAccessPayload = {
@@ -28,18 +50,5 @@ export type JwtRefreshPayload = {
   jti: string;
 };
 
-export type AuthUserResponse = {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-  status: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type AuthSessionResponse = {
-  authenticated: true;
-  user: AuthUserResponse;
-};
+export type AuthenticatedUser =
+  Omit<User, "password">;

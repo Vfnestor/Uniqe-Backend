@@ -25,6 +25,10 @@ import {
   JwtAuthGuard,
 } from "./guards";
 
+import type {
+  JwtAccessPayload,
+} from "./auth.types";
+
 @Controller("auth")
 export class AuthController {
   constructor(
@@ -62,9 +66,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async session(
     @CurrentUser()
-    user: {
-      sub: string;
-    },
+    user: JwtAccessPayload,
   ) {
     return this.authService.getSession(
       user.sub,

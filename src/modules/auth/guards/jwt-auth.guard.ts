@@ -81,7 +81,8 @@ export class JwtAuthGuard
 
       if (
         payload.type !==
-        "access"
+          "access" ||
+        !payload.sub
       ) {
         throw new UnauthorizedException(
           "Invalid access token.",

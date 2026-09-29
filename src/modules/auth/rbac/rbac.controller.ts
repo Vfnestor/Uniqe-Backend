@@ -5,8 +5,8 @@ import {
 } from "@nestjs/common";
 
 import {
-  CurrentUser,
   Authorize,
+  CurrentUser,
 } from "../decorators";
 
 import {
@@ -18,6 +18,10 @@ import {
   RBAC_ROLES,
 } from "./rbac.constants";
 
+import {
+  RbacService,
+} from "./rbac.service";
+
 import type {
   JwtAccessPayload,
 } from "../auth.types";
@@ -27,6 +31,10 @@ import type {
   JwtAuthGuard,
 )
 export class RbacController {
+  constructor(
+    private readonly rbacService: RbacService,
+  ) {}
+
   @Get("authenticated")
   authenticated(
     @CurrentUser()
@@ -75,6 +83,21 @@ export class RbacController {
       role: user.role,
       permission:
         RBAC_PERMISSIONS.ADMIN_ACCESS,
+    };
+  }
+
+  @Get("permissions")
+  permissions(
+    @CurrentUser()
+    user: JwtAccessPayload,
+  ) {
+    return {
+      role: user.role,
+      permissions:
+        this.rbacService
+          .getPermissionsForRole(
+            user.role,
+          ),
     };
   }
 }

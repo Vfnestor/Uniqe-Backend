@@ -15,6 +15,7 @@ import {
 import type {
   CreateUAppDto,
   ListUAppsQueryDto,
+  ReviewUAppDto,
   UpdateUAppDto,
 } from "./dto";
 
@@ -59,7 +60,10 @@ export class UAppsService {
       safeLimit;
 
     const where: Prisma.UAppWhereInput =
-      {};
+      {
+        reviewStatus:
+          "APPROVED",
+      };
 
     const search =
       query.search?.trim();
@@ -135,16 +139,6 @@ export class UAppsService {
       where.accent =
         query.accent
           .toUpperCase() as Prisma.UAppWhereInput["accent"];
-    }
-
-    if (query.reviewStatus) {
-      where.reviewStatus =
-        query.reviewStatus
-          .toUpperCase()
-          .replace(
-            "-",
-            "_",
-          ) as Prisma.UAppWhereInput["reviewStatus"];
     }
 
     if (
@@ -254,8 +248,51 @@ export class UAppsService {
       ),
       meta: {
         page: 1,
-        limit: apps.length || 20,
-        total: apps.length,
+        limit:
+          apps.length || 20,
+        total:
+          apps.length,
+        totalPages:
+          apps.length > 0
+            ? 1
+            : 0,
+      },
+    };
+  }
+
+  async listPendingReview(): Promise<
+    UAppListResponse
+  > {
+    const apps =
+      await this.prisma.uApp.findMany({
+        where: {
+          reviewStatus:
+            "PENDING_REVIEW",
+        },
+        orderBy: {
+          createdAt:
+            "asc",
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    return {
+      items: apps.map(
+        mapUApp,
+      ),
+      meta: {
+        page: 1,
+        limit:
+          apps.length || 20,
+        total:
+          apps.length,
         totalPages:
           apps.length > 0
             ? 1
@@ -266,6 +303,7 @@ export class UAppsService {
 
   async findById(
     id: string,
+    user?: JwtAccessPayload,
   ) {
     const app =
       await this.prisma.uApp.findUnique({
@@ -283,6 +321,24 @@ export class UAppsService {
       });
 
     if (!app) {
+      throw new NotFoundException(
+        "UApp not found.",
+      );
+    }
+
+    const isOwner =
+      user?.role === "owner";
+
+    const isCreator =
+      user?.sub ===
+      app.creatorId;
+
+    if (
+      app.reviewStatus !==
+        "APPROVED" &&
+      !isOwner &&
+      !isCreator
+    ) {
       throw new NotFoundException(
         "UApp not found.",
       );
@@ -412,6 +468,9 @@ export class UAppsService {
             isOwner
               ? "APPROVED"
               : "DRAFT",
+
+          rejectionReason:
+            null,
 
           metadata:
             dto.metadata,
@@ -626,6 +685,12 @@ export class UAppsService {
         data.official =
           dto.official;
       }
+    } else {
+      data.reviewStatus =
+        "DRAFT";
+
+      data.rejectionReason =
+        null;
     }
 
     const app =
@@ -645,5 +710,150 @@ export class UAppsService {
       });
 
     return mapUApp(app);
+  }
+
+  async submitForReview(
+    id: string,
+    user: JwtAccessPayload,
+  ) {
+    const app =
+      await this.prisma.uApp.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!app) {
+      throw new NotFoundException(
+        "UApp not found.",
+      );
+    }
+
+    if (
+      user.role !== "owner" &&
+      app.creatorId !==
+        user.sub
+    ) {
+      throw new ForbiddenException(
+        "You can only submit your own UApps.",
+      );
+    }
+
+    if (
+      user.role !== "owner" &&
+      app.reviewStatus ===
+        "APPROVED"
+    ) {
+      throw new ForbiddenException(
+        "An approved UApp cannot be submitted again.",
+      );
+    }
+
+    const updated =
+      await this.prisma.uApp.update({
+        where: {
+          id,
+        },
+        data: {
+          reviewStatus:
+            user.role ===
+            "owner"
+              ? "APPROVED"
+              : "PENDING_REVIEW",
+          rejectionReason:
+            null,
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    return mapUApp(updated);
+  }
+
+  async approve(
+    id: string,
+  ) {
+    const app =
+      await this.prisma.uApp.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!app) {
+      throw new NotFoundException(
+        "UApp not found.",
+      );
+    }
+
+    const updated =
+      await this.prisma.uApp.update({
+        where: {
+          id,
+        },
+        data: {
+          reviewStatus:
+            "APPROVED",
+          rejectionReason:
+            null,
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    return mapUApp(updated);
+  }
+
+  async reject(
+    id: string,
+    dto: ReviewUAppDto,
+  ) {
+    const app =
+      await this.prisma.uApp.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!app) {
+      throw new NotFoundException(
+        "UApp not found.",
+      );
+    }
+
+    const updated =
+      await this.prisma.uApp.update({
+        where: {
+          id,
+        },
+        data: {
+          reviewStatus:
+            "REJECTED",
+          rejectionReason:
+            dto.reason.trim(),
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    return mapUApp(updated);
   }
 }

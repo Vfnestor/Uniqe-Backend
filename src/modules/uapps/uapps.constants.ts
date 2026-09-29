@@ -10,12 +10,16 @@ export const UAPPS_DEFAULT_LIMIT =
 export const UAPPS_MAX_LIMIT =
   100;
 
+export const UAPPS_MAX_SEARCH_LENGTH =
+  100;
+
 export const UAPP_SOURCES = {
   USER: "user",
   UNIQE: "uniqe",
   GOOGLE_PLAY:
     "google-play",
-  APP_STORE: "app-store",
+  APP_STORE:
+    "app-store",
 } as const;
 
 export const UAPP_PLATFORMS = {

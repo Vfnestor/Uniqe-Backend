@@ -4,17 +4,20 @@ import {
 } from "@nestjs/common";
 
 import {
-  HealthService,
-} from "./health.service";
+  Public,
+} from "../../common/decorators";
 
 @Controller("health")
 export class HealthController {
-  constructor(
-    private readonly healthService: HealthService,
-  ) {}
-
   @Get()
-  async getHealth() {
-    return this.healthService.check();
+  @Public()
+  check() {
+    return {
+      status: "ok",
+      service:
+        "Uniqe Backend",
+      timestamp:
+        new Date().toISOString(),
+    };
   }
 }

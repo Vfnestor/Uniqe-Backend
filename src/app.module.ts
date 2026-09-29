@@ -27,6 +27,10 @@ import {
 } from "./modules/users";
 
 import {
+  UAppsModule,
+} from "./modules/uapps";
+
+import {
   GlobalAuthGuard,
 } from "./common/guards";
 
@@ -47,6 +51,8 @@ import {
     AuthModule,
 
     UsersModule,
+
+    UAppsModule,
   ],
 
   providers: [

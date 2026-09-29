@@ -52,6 +52,21 @@ export class UAppsController {
     );
   }
 
+  @Get("mine")
+  @Authorize({
+    permissions: [
+      RBAC_PERMISSIONS.UAPPS_CREATE,
+    ],
+  })
+  listMine(
+    @CurrentUser()
+    user: JwtAccessPayload,
+  ) {
+    return this.uAppsService.listMine(
+      user.sub,
+    );
+  }
+
   @Get(":id")
   @Authorize({
     permissions: [
@@ -70,7 +85,7 @@ export class UAppsController {
   @Post()
   @Authorize({
     permissions: [
-      RBAC_PERMISSIONS.UAPPS_MANAGE,
+      RBAC_PERMISSIONS.UAPPS_CREATE,
     ],
   })
   create(
@@ -82,14 +97,14 @@ export class UAppsController {
   ) {
     return this.uAppsService.create(
       dto,
-      user.sub,
+      user,
     );
   }
 
   @Patch(":id")
   @Authorize({
     permissions: [
-      RBAC_PERMISSIONS.UAPPS_MANAGE,
+      RBAC_PERMISSIONS.UAPPS_CREATE,
     ],
   })
   update(
@@ -98,10 +113,14 @@ export class UAppsController {
 
     @Body()
     dto: UpdateUAppDto,
+
+    @CurrentUser()
+    user: JwtAccessPayload,
   ) {
     return this.uAppsService.update(
       id,
       dto,
+      user,
     );
   }
 }

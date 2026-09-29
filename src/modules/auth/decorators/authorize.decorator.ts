@@ -6,7 +6,7 @@ import {
 import {
   Permissions,
   Roles,
-} from ".";
+} from "./index";
 
 import {
   PermissionsGuard,
@@ -35,12 +35,6 @@ export function Authorize(
         ...options.roles,
       ),
     );
-
-    decorators.push(
-      UseGuards(
-        RolesGuard,
-      ),
-    );
   }
 
   if (
@@ -52,10 +46,32 @@ export function Authorize(
         ...options.permissions,
       ),
     );
+  }
 
+  const guards = [];
+
+  if (
+    options.roles &&
+    options.roles.length > 0
+  ) {
+    guards.push(
+      RolesGuard,
+    );
+  }
+
+  if (
+    options.permissions &&
+    options.permissions.length > 0
+  ) {
+    guards.push(
+      PermissionsGuard,
+    );
+  }
+
+  if (guards.length > 0) {
     decorators.push(
       UseGuards(
-        PermissionsGuard,
+        ...guards,
       ),
     );
   }

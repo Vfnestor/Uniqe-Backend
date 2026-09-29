@@ -4,13 +4,9 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 
-import {
-  Prisma,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
-import {
-  PrismaService,
-} from "../../database/prisma.service";
+import { PrismaService } from "../../database/prisma.service";
 
 import type {
   CreateUAppDto,
@@ -19,17 +15,11 @@ import type {
   UpdateUAppDto,
 } from "./dto";
 
-import {
-  mapUApp,
-} from "./uapps.mapper";
+import { mapUApp } from "./uapps.mapper";
 
-import type {
-  UAppListResponse,
-} from "./uapps.types";
+import type { UAppListResponse } from "./uapps.types";
 
-import type {
-  JwtAccessPayload,
-} from "../auth/auth.types";
+import type { JwtAccessPayload } from "../auth/auth.types";
 
 @Injectable()
 export class UAppsService {
@@ -38,32 +28,28 @@ export class UAppsService {
   ) {}
 
   async list(
-    query: ListUAppsQueryDto = {},
+    query: ListUAppsQueryDto = new ListUAppsQueryDto(),
   ): Promise<UAppListResponse> {
-    const safePage =
+    const safePage = Math.max(
+      1,
+      query.page ?? 1,
+    );
+
+    const safeLimit = Math.min(
+      100,
       Math.max(
         1,
-        query.page ?? 1,
-      );
-
-    const safeLimit =
-      Math.min(
-        100,
-        Math.max(
-          1,
-          query.limit ?? 20,
-        ),
-      );
+        query.limit ?? 20,
+      ),
+    );
 
     const skip =
       (safePage - 1) *
       safeLimit;
 
-    const where: Prisma.UAppWhereInput =
-      {
-        reviewStatus:
-          "APPROVED",
-      };
+    const where: Prisma.UAppWhereInput = {
+      reviewStatus: "APPROVED",
+    };
 
     const search =
       query.search?.trim();
@@ -93,8 +79,7 @@ export class UAppsService {
 
     if (query.category) {
       where.category = {
-        equals:
-          query.category.trim(),
+        equals: query.category.trim(),
         mode: "insensitive",
       };
     }
@@ -111,8 +96,7 @@ export class UAppsService {
 
     if (query.platform) {
       where.platform =
-        query.platform
-          .toUpperCase() as Prisma.UAppWhereInput["platform"];
+        query.platform.toUpperCase() as Prisma.UAppWhereInput["platform"];
     }
 
     if (query.type) {
@@ -137,8 +121,7 @@ export class UAppsService {
 
     if (query.accent) {
       where.accent =
-        query.accent
-          .toUpperCase() as Prisma.UAppWhereInput["accent"];
+        query.accent.toUpperCase() as Prisma.UAppWhereInput["accent"];
     }
 
     if (
@@ -168,36 +151,33 @@ export class UAppsService {
     const [
       apps,
       total,
-    ] =
-      await Promise.all([
-        this.prisma.uApp.findMany({
-          where,
-          skip,
-          take: safeLimit,
-          orderBy: [
-            {
-              featured:
-                "desc",
-            },
-            {
-              createdAt:
-                "desc",
-            },
-          ],
-          include: {
-            creator: {
-              select: {
-                id: true,
-                name: true,
-              },
+    ] = await Promise.all([
+      this.prisma.uApp.findMany({
+        where,
+        skip,
+        take: safeLimit,
+        orderBy: [
+          {
+            featured: "desc",
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
             },
           },
-        }),
+        },
+      }),
 
-        this.prisma.uApp.count({
-          where,
-        }),
-      ]);
+      this.prisma.uApp.count({
+        where,
+      }),
+    ]);
 
     return {
       items: apps.map(
@@ -223,13 +203,11 @@ export class UAppsService {
     const apps =
       await this.prisma.uApp.findMany({
         where: {
-          creatorId:
-            userId,
+          creatorId: userId,
         },
         orderBy: [
           {
-            createdAt:
-              "desc",
+            createdAt: "desc",
           },
         ],
         include: {
@@ -270,8 +248,7 @@ export class UAppsService {
             "PENDING_REVIEW",
         },
         orderBy: {
-          createdAt:
-            "asc",
+          createdAt: "asc",
         },
         include: {
           creator: {
@@ -760,6 +737,7 @@ export class UAppsService {
             "owner"
               ? "APPROVED"
               : "PENDING_REVIEW",
+
           rejectionReason:
             null,
         },
@@ -800,6 +778,7 @@ export class UAppsService {
         data: {
           reviewStatus:
             "APPROVED",
+
           rejectionReason:
             null,
         },
@@ -841,6 +820,7 @@ export class UAppsService {
         data: {
           reviewStatus:
             "REJECTED",
+
           rejectionReason:
             dto.reason.trim(),
         },

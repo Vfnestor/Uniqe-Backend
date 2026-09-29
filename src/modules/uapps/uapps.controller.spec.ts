@@ -10,6 +10,8 @@ describe(
     const service: any = {
       list:
         jest.fn(),
+      listMine:
+        jest.fn(),
       findById:
         jest.fn(),
       create:
@@ -69,6 +71,42 @@ describe(
     );
 
     it(
+      "should list current user's UApps",
+      async () => {
+        service.listMine =
+          jest
+            .fn()
+            .mockResolvedValue({
+              items: [],
+              meta: {
+                page: 1,
+                limit: 20,
+                total: 0,
+                totalPages: 0,
+              },
+            });
+
+        const result =
+          await controller.listMine(
+            {
+              sub: "user-1",
+              role: "user",
+            } as any,
+          );
+
+        expect(
+          service.listMine,
+        ).toHaveBeenCalledWith(
+          "user-1",
+        );
+
+        expect(
+          result.items,
+        ).toEqual([]);
+      },
+    );
+
+    it(
       "should find UApp",
       async () => {
         service.findById =
@@ -102,6 +140,11 @@ describe(
           name: "Test App",
         };
 
+        const user: any = {
+          sub: "user-1",
+          role: "user",
+        };
+
         service.create =
           jest
             .fn()
@@ -112,16 +155,14 @@ describe(
         const result =
           await controller.create(
             dto,
-            {
-              sub: "user-1",
-            } as any,
+            user,
           );
 
         expect(
           service.create,
         ).toHaveBeenCalledWith(
           dto,
-          "user-1",
+          user,
         );
 
         expect(
@@ -131,10 +172,15 @@ describe(
     );
 
     it(
-      "should update UApp",
+      "should update UApp for current user",
       async () => {
         const dto: any = {
           name: "Updated",
+        };
+
+        const user: any = {
+          sub: "user-1",
+          role: "user",
         };
 
         service.update =
@@ -148,6 +194,7 @@ describe(
           await controller.update(
             "app-1",
             dto,
+            user,
           );
 
         expect(
@@ -155,6 +202,7 @@ describe(
         ).toHaveBeenCalledWith(
           "app-1",
           dto,
+          user,
         );
 
         expect(

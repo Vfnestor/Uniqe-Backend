@@ -5,8 +5,11 @@ import {
 
 import {
   Permissions,
+} from "./permissions.decorator";
+
+import {
   Roles,
-} from "./index";
+} from "./roles.decorator";
 
 import {
   PermissionsGuard,

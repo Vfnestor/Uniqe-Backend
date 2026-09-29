@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -24,6 +23,7 @@ import type {
 
 import {
   CreateUAppDto,
+  ListUAppsQueryDto,
   UpdateUAppDto,
 } from "./dto";
 
@@ -44,25 +44,11 @@ export class UAppsController {
     ],
   })
   list(
-    @Query(
-      "page",
-      new ParseIntPipe({
-        optional: true,
-      }),
-    )
-    page = 1,
-
-    @Query(
-      "limit",
-      new ParseIntPipe({
-        optional: true,
-      }),
-    )
-    limit = 20,
+    @Query()
+    query: ListUAppsQueryDto,
   ) {
     return this.uAppsService.list(
-      page,
-      limit,
+      query,
     );
   }
 

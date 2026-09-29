@@ -13,6 +13,7 @@ export const RBAC_PERMISSIONS = {
   ADMIN_ACCESS: "admin.access",
 
   UAPPS_VIEW: "uapps.view",
+  UAPPS_CREATE: "uapps.create",
   UAPPS_MANAGE: "uapps.manage",
 
   UWEB_VIEW: "uweb.view",

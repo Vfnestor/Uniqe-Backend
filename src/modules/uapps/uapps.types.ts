@@ -44,6 +44,22 @@ export type UAppReviewStatus =
   | "approved"
   | "rejected";
 
+export type UAppListQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  source?: UAppSource;
+  platform?: UAppPlatform;
+  type?: UAppType;
+  status?: UAppStatus;
+  accent?: UAppAccent;
+  reviewStatus?: UAppReviewStatus;
+  featured?: boolean;
+  verified?: boolean;
+  official?: boolean;
+};
+
 export type UAppResponse = {
   id: string;
 
@@ -77,6 +93,7 @@ export type UAppResponse = {
   releaseLabel: string | null;
 
   productCode: string | null;
+
   releaseStatus:
     | "stable"
     | "beta"
@@ -111,6 +128,7 @@ export type UAppWithCreator =
 
 export type UAppListResponse = {
   items: UAppResponse[];
+
   meta: {
     page: number;
     limit: number;

@@ -24,6 +24,7 @@ import type {
 import {
   CreateUAppDto,
   ListUAppsQueryDto,
+  ReviewUAppDto,
   UpdateUAppDto,
 } from "./dto";
 
@@ -67,6 +68,16 @@ export class UAppsController {
     );
   }
 
+  @Get("moderation")
+  @Authorize({
+    permissions: [
+      RBAC_PERMISSIONS.UAPPS_MANAGE,
+    ],
+  })
+  listPendingReview() {
+    return this.uAppsService.listPendingReview();
+  }
+
   @Get(":id")
   @Authorize({
     permissions: [
@@ -76,9 +87,13 @@ export class UAppsController {
   findById(
     @Param("id")
     id: string,
+
+    @CurrentUser()
+    user: JwtAccessPayload,
   ) {
     return this.uAppsService.findById(
       id,
+      user,
     );
   }
 
@@ -121,6 +136,59 @@ export class UAppsController {
       id,
       dto,
       user,
+    );
+  }
+
+  @Post(":id/submit-review")
+  @Authorize({
+    permissions: [
+      RBAC_PERMISSIONS.UAPPS_CREATE,
+    ],
+  })
+  submitForReview(
+    @Param("id")
+    id: string,
+
+    @CurrentUser()
+    user: JwtAccessPayload,
+  ) {
+    return this.uAppsService.submitForReview(
+      id,
+      user,
+    );
+  }
+
+  @Post(":id/approve")
+  @Authorize({
+    permissions: [
+      RBAC_PERMISSIONS.UAPPS_MANAGE,
+    ],
+  })
+  approve(
+    @Param("id")
+    id: string,
+  ) {
+    return this.uAppsService.approve(
+      id,
+    );
+  }
+
+  @Post(":id/reject")
+  @Authorize({
+    permissions: [
+      RBAC_PERMISSIONS.UAPPS_MANAGE,
+    ],
+  })
+  reject(
+    @Param("id")
+    id: string,
+
+    @Body()
+    dto: ReviewUAppDto,
+  ) {
+    return this.uAppsService.reject(
+      id,
+      dto,
     );
   }
 }

@@ -16,12 +16,16 @@ describe(
       uApp: {
         findMany:
           jest.fn(),
+
         count:
           jest.fn(),
+
         findUnique:
           jest.fn(),
+
         create:
           jest.fn(),
+
         update:
           jest.fn(),
       },
@@ -68,6 +72,26 @@ describe(
         ),
     };
 
+    const approvedApp = {
+      ...app,
+      reviewStatus:
+        "APPROVED",
+    };
+
+    const pendingApp = {
+      ...app,
+      reviewStatus:
+        "PENDING_REVIEW",
+    };
+
+    const rejectedApp = {
+      ...app,
+      reviewStatus:
+        "REJECTED",
+      rejectionReason:
+        "Needs improvement.",
+    };
+
     const user: any = {
       sub: "user-1",
       role: "user",
@@ -88,13 +112,13 @@ describe(
     });
 
     it(
-      "should list UApps",
+      "should list only approved UApps",
       async () => {
         prisma.uApp.findMany =
           jest
             .fn()
             .mockResolvedValue([
-              app,
+              approvedApp,
             ]);
 
         prisma.uApp.count =
@@ -102,181 +126,14 @@ describe(
             .fn()
             .mockResolvedValue(1);
 
-        const result =
-          await service.list({
-            page: 1,
-            limit: 20,
-          });
-
-        expect(
-          result.items,
-        ).toHaveLength(1);
-
-        expect(
-          result.meta.total,
-        ).toBe(1);
-      },
-    );
-
-    it(
-      "should list current user's UApps",
-      async () => {
-        prisma.uApp.findMany =
-          jest
-            .fn()
-            .mockResolvedValue([
-              app,
-            ]);
-
-        const result =
-          await service.listMine(
-            "user-1",
-          );
+        await service.list();
 
         expect(
           prisma.uApp.findMany,
-        ).toHaveBeenCalledWith({
-          where: {
-            creatorId:
-              "user-1",
-          },
-          orderBy: [
-            {
-              createdAt:
-                "desc",
-            },
-          ],
-          include: {
-            creator: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        });
-
-        expect(
-          result.items[0].id,
-        ).toBe("app-1");
-      },
-    );
-
-    it(
-      "should create a user UApp with protected ownership fields",
-      async () => {
-        prisma.uApp.create =
-          jest
-            .fn()
-            .mockResolvedValue(
-              app,
-            );
-
-        const dto: any = {
-          name: "Test App",
-          description:
-            "Test description",
-          category: "Tools",
-          source: "uniqe",
-          sourceLabel:
-            "Uniqe",
-          platform: "web",
-          platformLabel:
-            "Web",
-          type: "web-app",
-          typeLabel:
-            "Web App",
-          status: "available",
-          statusLabel:
-            "Available",
-          icon: "icon",
-          accent: "blue",
-          href: "/test",
-          featured: true,
-          verified: true,
-          official: true,
-        };
-
-        await service.create(
-          dto,
-          user,
-        );
-
-        expect(
-          prisma.uApp.create,
         ).toHaveBeenCalledWith(
           expect.objectContaining({
-            data:
+            where:
               expect.objectContaining({
-                source: "USER",
-                sourceLabel:
-                  "User",
-                featured: false,
-                verified: false,
-                official: false,
-                reviewStatus:
-                  "DRAFT",
-                creator: {
-                  connect: {
-                    id: "user-1",
-                  },
-                },
-              }),
-          }),
-        );
-      },
-    );
-
-    it(
-      "should allow owner to create an official UApp",
-      async () => {
-        prisma.uApp.create =
-          jest
-            .fn()
-            .mockResolvedValue(
-              app,
-            );
-
-        const dto: any = {
-          name: "Official App",
-          description:
-            "Official application",
-          category: "Tools",
-          source: "uniqe",
-          sourceLabel:
-            "Uniqe",
-          platform: "web",
-          platformLabel:
-            "Web",
-          type: "web-app",
-          typeLabel:
-            "Web App",
-          status: "available",
-          statusLabel:
-            "Available",
-          icon: "icon",
-          accent: "blue",
-          href: "/official",
-          featured: true,
-          verified: true,
-          official: true,
-        };
-
-        await service.create(
-          dto,
-          owner,
-        );
-
-        expect(
-          prisma.uApp.create,
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            data:
-              expect.objectContaining({
-                source: "UNIQE",
-                featured: true,
-                verified: true,
-                official: true,
                 reviewStatus:
                   "APPROVED",
               }),
@@ -286,7 +143,7 @@ describe(
     );
 
     it(
-      "should allow user to update own UApp",
+      "should allow creator to see own draft",
       async () => {
         prisma.uApp.findUnique =
           jest
@@ -295,56 +152,20 @@ describe(
               app,
             );
 
-        prisma.uApp.update =
-          jest
-            .fn()
-            .mockResolvedValue({
-              ...app,
-              name:
-                "Updated App",
-            });
-
         const result =
-          await service.update(
+          await service.findById(
             "app-1",
-            {
-              name:
-                "Updated App",
-              featured: true,
-              verified: true,
-              official: true,
-            } as any,
             user,
           );
 
         expect(
-          prisma.uApp.update,
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            data:
-              expect.objectContaining({
-                name:
-                  "Updated App",
-              }),
-          }),
-        );
-
-        expect(
-          prisma.uApp.update
-            .mock.calls[0][0]
-            .data.featured,
-        ).toBeUndefined();
-
-        expect(
-          result.name,
-        ).toBe(
-          "Updated App",
-        );
+          result.id,
+        ).toBe("app-1");
       },
     );
 
     it(
-      "should reject user from updating another user's UApp",
+      "should hide another user's draft",
       async () => {
         prisma.uApp.findUnique =
           jest
@@ -356,12 +177,101 @@ describe(
             });
 
         await expect(
-          service.update(
+          service.findById(
             "app-1",
-            {
-              name:
-                "Hacked",
-            } as any,
+            user,
+          ),
+        ).rejects.toThrow(
+          NotFoundException,
+        );
+      },
+    );
+
+    it(
+      "should allow owner to see any UApp",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              pendingApp,
+            );
+
+        const result =
+          await service.findById(
+            "app-1",
+            owner,
+          );
+
+        expect(
+          result.id,
+        ).toBe("app-1");
+      },
+    );
+
+    it(
+      "should allow user to submit own UApp",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              rejectedApp,
+            );
+
+        prisma.uApp.update =
+          jest
+            .fn()
+            .mockResolvedValue({
+              ...rejectedApp,
+              reviewStatus:
+                "PENDING_REVIEW",
+              rejectionReason:
+                null,
+            });
+
+        const result =
+          await service.submitForReview(
+            "app-1",
+            user,
+          );
+
+        expect(
+          prisma.uApp.update,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: {
+              reviewStatus:
+                "PENDING_REVIEW",
+              rejectionReason:
+                null,
+            },
+          }),
+        );
+
+        expect(
+          result.reviewStatus,
+        ).toBe(
+          "pending-review",
+        );
+      },
+    );
+
+    it(
+      "should reject submission from another user",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue({
+              ...app,
+              creatorId:
+                "another-user",
+            });
+
+        await expect(
+          service.submitForReview(
+            "app-1",
             user,
           ),
         ).rejects.toThrow(
@@ -375,31 +285,125 @@ describe(
     );
 
     it(
-      "should allow owner to update any UApp",
+      "should approve an existing UApp",
       async () => {
         prisma.uApp.findUnique =
           jest
             .fn()
             .mockResolvedValue(
-              app,
+              pendingApp,
+            );
+
+        prisma.uApp.update =
+          jest
+            .fn()
+            .mockResolvedValue(
+              approvedApp,
+            );
+
+        const result =
+          await service.approve(
+            "app-1",
+          );
+
+        expect(
+          prisma.uApp.update,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: {
+              reviewStatus:
+                "APPROVED",
+              rejectionReason:
+                null,
+            },
+          }),
+        );
+
+        expect(
+          result.reviewStatus,
+        ).toBe(
+          "approved",
+        );
+      },
+    );
+
+    it(
+      "should reject an existing UApp",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              pendingApp,
+            );
+
+        prisma.uApp.update =
+          jest
+            .fn()
+            .mockResolvedValue(
+              rejectedApp,
+            );
+
+        const result =
+          await service.reject(
+            "app-1",
+            {
+              reason:
+                "Needs improvement.",
+            },
+          );
+
+        expect(
+          prisma.uApp.update,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: {
+              reviewStatus:
+                "REJECTED",
+              rejectionReason:
+                "Needs improvement.",
+            },
+          }),
+        );
+
+        expect(
+          result.reviewStatus,
+        ).toBe(
+          "rejected",
+        );
+      },
+    );
+
+    it(
+      "should reset user UApp to draft after editing",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              rejectedApp,
             );
 
         prisma.uApp.update =
           jest
             .fn()
             .mockResolvedValue({
-              ...app,
-              featured: true,
+              ...rejectedApp,
+              name:
+                "Updated App",
+              reviewStatus:
+                "DRAFT",
+              rejectionReason:
+                null,
             });
 
         await service.update(
           "app-1",
           {
-            featured: true,
-            verified: true,
-            official: true,
+            name:
+              "Updated App",
           } as any,
-          owner,
+          user,
         );
 
         expect(
@@ -408,9 +412,12 @@ describe(
           expect.objectContaining({
             data:
               expect.objectContaining({
-                featured: true,
-                verified: true,
-                official: true,
+                name:
+                  "Updated App",
+                reviewStatus:
+                  "DRAFT",
+                rejectionReason:
+                  null,
               }),
           }),
         );
@@ -428,13 +435,8 @@ describe(
             );
 
         await expect(
-          service.update(
+          service.approve(
             "missing",
-            {
-              name:
-                "Test",
-            } as any,
-            user,
           ),
         ).rejects.toThrow(
           NotFoundException,

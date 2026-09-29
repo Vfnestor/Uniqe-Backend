@@ -2,6 +2,10 @@ import {
   RBAC_ROLES,
 } from "./rbac.constants";
 
+import {
+  getRolePermissions,
+} from "./rbac.permissions";
+
 import type {
   RbacPermission,
   RbacRole,
@@ -52,12 +56,37 @@ export function hasPermission(
   const normalizedRole =
     normalizeRole(role);
 
-  if (
-    normalizedRole ===
-    RBAC_ROLES.OWNER
-  ) {
-    return true;
+  if (!normalizedRole) {
+    return false;
   }
 
-  return false;
+  return getRolePermissions(
+    normalizedRole,
+  ).includes(permission);
+}
+
+export function hasAnyPermission(
+  role: string,
+  permissions: RbacPermission[],
+): boolean {
+  return permissions.some(
+    (permission) =>
+      hasPermission(
+        role,
+        permission,
+      ),
+  );
+}
+
+export function hasAllPermissions(
+  role: string,
+  permissions: RbacPermission[],
+): boolean {
+  return permissions.every(
+    (permission) =>
+      hasPermission(
+        role,
+        permission,
+      ),
+  );
 }

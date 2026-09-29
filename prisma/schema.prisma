@@ -30,6 +30,60 @@ enum ThemePreference {
   DARK
 }
 
+enum UAppSource {
+  USER
+  UNIQE
+  GOOGLE_PLAY
+  APP_STORE
+}
+
+enum UAppPlatform {
+  WEB
+  ANDROID
+  IOS
+  WINDOWS
+  MACOS
+  LINUX
+  MULTI
+}
+
+enum UAppType {
+  WEB_APP
+  INSTALLABLE
+  HYBRID
+}
+
+enum UAppStatus {
+  AVAILABLE
+  DEVELOPMENT
+  COMING_SOON
+  EXPERIMENTAL
+}
+
+enum UAppAccent {
+  BLUE
+  PURPLE
+  GREEN
+  ORANGE
+  BLACK
+  PINK
+  RED
+}
+
+enum UAppReleaseStatus {
+  STABLE
+  BETA
+  DEVELOPMENT
+  COMING_SOON
+}
+
+enum UAppReviewStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model User {
   id        String     @id @default(cuid())
   name      String
@@ -48,6 +102,8 @@ model User {
   favorites     Favorite[]
   notifications Notification[]
   refreshTokens RefreshToken[]
+
+  createdUApps UApp[] @relation("UAppCreator")
 }
 
 model UserProfile {
@@ -142,4 +198,65 @@ model RefreshToken {
   @@index([userId])
   @@index([userId, revokedAt])
   @@index([expiresAt])
+}
+
+model UApp {
+  id String @id @default(cuid())
+
+  name        String
+  description String
+  category    String
+
+  source      UAppSource
+  sourceLabel String
+
+  platform      UAppPlatform
+  platformLabel String
+
+  type      UAppType
+  typeLabel String
+
+  status      UAppStatus
+  statusLabel String
+
+  icon   String
+  cover  String?
+  accent UAppAccent
+
+  href String
+
+  featured Boolean @default(false)
+  verified Boolean @default(false)
+
+  version     String?
+  official    Boolean @default(false)
+  releaseLabel String?
+
+  productCode   String?
+  releaseStatus UAppReleaseStatus?
+
+  reviewStatus UAppReviewStatus @default(DRAFT)
+
+  rejectionReason String?
+
+  creatorId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User? @relation(
+    "UAppCreator",
+    fields: [creatorId],
+    references: [id],
+    onDelete: SetNull
+  )
+
+  @@index([source])
+  @@index([status])
+  @@index([category])
+  @@index([creatorId])
+  @@index([reviewStatus])
+  @@index([featured])
 }

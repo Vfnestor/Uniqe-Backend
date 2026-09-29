@@ -8,19 +8,19 @@ import {
 
 import {
   DatabaseModule,
-} from "./database/database.module";
+} from "./database";
 
 import {
   HealthModule,
-} from "./modules/health/health.module";
+} from "./modules/health";
 
 import {
   AuthModule,
-} from "./modules/auth/auth.module";
+} from "./modules/auth";
 
 import {
   UsersModule,
-} from "./modules/users/users.module";
+} from "./modules/users";
 
 @Module({
   imports: [

@@ -62,3 +62,6 @@ export const UAPP_REVIEW_STATUSES = {
   APPROVED: "approved",
   REJECTED: "rejected",
 } as const;
+
+export const UAPP_REVIEW_MAX_REJECTION_REASON_LENGTH =
+  1000;

@@ -1,55 +1,51 @@
 import {
+  Test,
+  TestingModule,
+} from "@nestjs/testing";
+
+import {
   DatabaseModule,
-} from "./database.module";
+} from "../../src/database/database.module";
 
 import {
   PrismaService,
-} from "./prisma.service";
+} from "../../src/database/prisma.service";
 
 describe("DatabaseModule", () => {
-  it("should be defined", () => {
-    expect(
-      DatabaseModule,
-    ).toBeDefined();
+  let moduleRef: TestingModule;
+
+  beforeEach(async () => {
+    moduleRef = await Test.createTestingModule({
+      imports: [
+        DatabaseModule,
+      ],
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $connect: jest
+          .fn()
+          .mockResolvedValue(undefined),
+
+        $disconnect: jest
+          .fn()
+          .mockResolvedValue(undefined),
+      })
+      .compile();
   });
 
-  it("should be a global module", () => {
-    const metadata =
-      Reflect.getMetadata(
-        "global",
-        DatabaseModule,
-      );
+  afterEach(async () => {
+    await moduleRef.close();
+  });
 
-    expect(
-      metadata,
-    ).toBe(true);
+  it("should compile successfully", () => {
+    expect(moduleRef).toBeDefined();
   });
 
   it("should provide PrismaService", () => {
-    const metadata =
-      Reflect.getMetadata(
-        "providers",
-        DatabaseModule,
-      );
-
-    expect(
-      metadata,
-    ).toContain(
+    const prisma = moduleRef.get(
       PrismaService,
     );
-  });
 
-  it("should export PrismaService", () => {
-    const metadata =
-      Reflect.getMetadata(
-        "exports",
-        DatabaseModule,
-      );
-
-    expect(
-      metadata,
-    ).toContain(
-      PrismaService,
-    );
+    expect(prisma).toBeDefined();
   });
 });

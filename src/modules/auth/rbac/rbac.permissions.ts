@@ -18,6 +18,7 @@ export const ROLE_PERMISSIONS: Record<
   RbacPermission[]
 > = {
   [RBAC_ROLES.USER]: [
+    RBAC_PERMISSIONS.UAPPS_VIEW,
     RBAC_PERMISSIONS.UAPPS_CREATE,
   ],
 

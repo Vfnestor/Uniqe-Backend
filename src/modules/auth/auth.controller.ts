@@ -25,6 +25,10 @@ import {
   JwtAuthGuard,
 } from "./guards";
 
+import {
+  Public,
+} from "../../common/decorators";
+
 import type {
   JwtAccessPayload,
 } from "./auth.types";
@@ -36,6 +40,7 @@ export class AuthController {
   ) {}
 
   @Post("register")
+  @Public()
   async register(
     @Body() dto: RegisterDto,
   ) {
@@ -45,6 +50,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @Public()
   async login(
     @Body() dto: LoginDto,
   ) {
@@ -54,6 +60,7 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @Public()
   async refresh(
     @Body() dto: RefreshTokenDto,
   ) {
@@ -74,6 +81,7 @@ export class AuthController {
   }
 
   @Post("logout")
+  @Public()
   async logout(
     @Body() dto: LogoutDto,
   ) {

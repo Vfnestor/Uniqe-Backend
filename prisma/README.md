@@ -19,3 +19,20 @@ prisma/
 │   ├── uapps.seeder.ts
 │   └── uapps.seeder.spec.ts
 └── migrations/
+
+## Schema
+
+فایل اصلی مدل‌های دیتابیس:
+
+`prisma/schema.prisma`
+
+این فایل شامل مدل‌ها، enumها، relationها و تنظیمات دیتابیس PostgreSQL است.
+
+## Migration
+
+Migrationها توسط Prisma ایجاد می‌شوند و نباید به‌صورت دستی نوشته شوند.
+
+در محیط توسعه:
+
+```bash
+npm run prisma:migrate

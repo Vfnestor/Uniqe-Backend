@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -24,6 +25,10 @@ import {
 import type {
   UAppListResponse,
 } from "./uapps.types";
+
+import type {
+  JwtAccessPayload,
+} from "../auth/auth.types";
 
 @Injectable()
 export class UAppsService {
@@ -218,6 +223,47 @@ export class UAppsService {
     };
   }
 
+  async listMine(
+    userId: string,
+  ): Promise<UAppListResponse> {
+    const apps =
+      await this.prisma.uApp.findMany({
+        where: {
+          creatorId:
+            userId,
+        },
+        orderBy: [
+          {
+            createdAt:
+              "desc",
+          },
+        ],
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+    return {
+      items: apps.map(
+        mapUApp,
+      ),
+      meta: {
+        page: 1,
+        limit: apps.length || 20,
+        total: apps.length,
+        totalPages:
+          apps.length > 0
+            ? 1
+            : 0,
+      },
+    };
+  }
+
   async findById(
     id: string,
   ) {
@@ -247,8 +293,11 @@ export class UAppsService {
 
   async create(
     dto: CreateUAppDto,
-    creatorId?: string,
+    user: JwtAccessPayload,
   ) {
+    const isOwner =
+      user.role === "owner";
+
     const app =
       await this.prisma.uApp.create({
         data: {
@@ -262,7 +311,11 @@ export class UAppsService {
             dto.category.trim(),
 
           source:
-            dto.source
+            (
+              isOwner
+                ? dto.source
+                : "user"
+            )
               .toUpperCase()
               .replace(
                 "-",
@@ -270,7 +323,11 @@ export class UAppsService {
               ) as any,
 
           sourceLabel:
-            dto.sourceLabel.trim(),
+            (
+              isOwner
+                ? dto.sourceLabel
+                : "User"
+            ).trim(),
 
           platform:
             dto.platform
@@ -315,19 +372,25 @@ export class UAppsService {
             dto.href.trim(),
 
           featured:
-            dto.featured ??
-            false,
+            isOwner
+              ? dto.featured ??
+                false
+              : false,
 
           verified:
-            dto.verified ??
-            false,
+            isOwner
+              ? dto.verified ??
+                false
+              : false,
 
           version:
             dto.version?.trim(),
 
           official:
-            dto.official ??
-            false,
+            isOwner
+              ? dto.official ??
+                false
+              : false,
 
           releaseLabel:
             dto.releaseLabel?.trim(),
@@ -345,17 +408,19 @@ export class UAppsService {
                   ) as any
               : undefined,
 
+          reviewStatus:
+            isOwner
+              ? "APPROVED"
+              : "DRAFT",
+
           metadata:
             dto.metadata,
 
-          creator:
-            creatorId
-              ? {
-                  connect: {
-                    id: creatorId,
-                  },
-                }
-              : undefined,
+          creator: {
+            connect: {
+              id: user.sub,
+            },
+          },
         },
 
         include: {
@@ -374,8 +439,33 @@ export class UAppsService {
   async update(
     id: string,
     dto: UpdateUAppDto,
+    user: JwtAccessPayload,
   ) {
-    await this.findById(id);
+    const existing =
+      await this.prisma.uApp.findUnique({
+        where: {
+          id,
+        },
+      });
+
+    if (!existing) {
+      throw new NotFoundException(
+        "UApp not found.",
+      );
+    }
+
+    const isOwner =
+      user.role === "owner";
+
+    if (
+      !isOwner &&
+      existing.creatorId !==
+        user.sub
+    ) {
+      throw new ForbiddenException(
+        "You can only manage your own UApps.",
+      );
+    }
 
     const data: any = {};
 
@@ -468,35 +558,11 @@ export class UAppsService {
     }
 
     if (
-      dto.featured !==
-      undefined
-    ) {
-      data.featured =
-        dto.featured;
-    }
-
-    if (
-      dto.verified !==
-      undefined
-    ) {
-      data.verified =
-        dto.verified;
-    }
-
-    if (
       dto.version !==
       undefined
     ) {
       data.version =
         dto.version.trim();
-    }
-
-    if (
-      dto.official !==
-      undefined
-    ) {
-      data.official =
-        dto.official;
     }
 
     if (
@@ -534,6 +600,32 @@ export class UAppsService {
     ) {
       data.metadata =
         dto.metadata;
+    }
+
+    if (isOwner) {
+      if (
+        dto.featured !==
+        undefined
+      ) {
+        data.featured =
+          dto.featured;
+      }
+
+      if (
+        dto.verified !==
+        undefined
+      ) {
+        data.verified =
+          dto.verified;
+      }
+
+      if (
+        dto.official !==
+        undefined
+      ) {
+        data.official =
+          dto.official;
+      }
     }
 
     const app =

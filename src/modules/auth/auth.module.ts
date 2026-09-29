@@ -19,6 +19,15 @@ import {
   AuthService,
 } from "./auth.service";
 
+import {
+  PermissionsGuard,
+  RolesGuard,
+} from "./guards";
+
+import {
+  RbacController,
+} from "./rbac/rbac.controller";
+
 @Module({
   imports: [
     ConfigModule,
@@ -43,14 +52,19 @@ import {
 
   controllers: [
     AuthController,
+    RbacController,
   ],
 
   providers: [
     AuthService,
+    RolesGuard,
+    PermissionsGuard,
   ],
 
   exports: [
     AuthService,
+    RolesGuard,
+    PermissionsGuard,
   ],
 })
 export class AuthModule {}

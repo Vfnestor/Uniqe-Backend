@@ -4,11 +4,16 @@ import {
 } from "@nestjs/common";
 
 import {
+  Prisma,
+} from "@prisma/client";
+
+import {
   PrismaService,
 } from "../../database/prisma.service";
 
 import type {
   CreateUAppDto,
+  ListUAppsQueryDto,
   UpdateUAppDto,
 } from "./dto";
 
@@ -27,13 +32,12 @@ export class UAppsService {
   ) {}
 
   async list(
-    page = 1,
-    limit = 20,
+    query: ListUAppsQueryDto = {},
   ): Promise<UAppListResponse> {
     const safePage =
       Math.max(
         1,
-        page,
+        query.page ?? 1,
       );
 
     const safeLimit =
@@ -41,7 +45,7 @@ export class UAppsService {
         100,
         Math.max(
           1,
-          limit,
+          query.limit ?? 20,
         ),
       );
 
@@ -49,12 +53,126 @@ export class UAppsService {
       (safePage - 1) *
       safeLimit;
 
+    const where: Prisma.UAppWhereInput =
+      {};
+
+    const search =
+      query.search?.trim();
+
+    if (search) {
+      where.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          category: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
+    if (query.category) {
+      where.category = {
+        equals:
+          query.category.trim(),
+        mode: "insensitive",
+      };
+    }
+
+    if (query.source) {
+      where.source =
+        query.source
+          .toUpperCase()
+          .replace(
+            "-",
+            "_",
+          ) as Prisma.UAppWhereInput["source"];
+    }
+
+    if (query.platform) {
+      where.platform =
+        query.platform
+          .toUpperCase() as Prisma.UAppWhereInput["platform"];
+    }
+
+    if (query.type) {
+      where.type =
+        query.type
+          .toUpperCase()
+          .replace(
+            "-",
+            "_",
+          ) as Prisma.UAppWhereInput["type"];
+    }
+
+    if (query.status) {
+      where.status =
+        query.status
+          .toUpperCase()
+          .replace(
+            "-",
+            "_",
+          ) as Prisma.UAppWhereInput["status"];
+    }
+
+    if (query.accent) {
+      where.accent =
+        query.accent
+          .toUpperCase() as Prisma.UAppWhereInput["accent"];
+    }
+
+    if (query.reviewStatus) {
+      where.reviewStatus =
+        query.reviewStatus
+          .toUpperCase()
+          .replace(
+            "-",
+            "_",
+          ) as Prisma.UAppWhereInput["reviewStatus"];
+    }
+
+    if (
+      query.featured !==
+      undefined
+    ) {
+      where.featured =
+        query.featured;
+    }
+
+    if (
+      query.verified !==
+      undefined
+    ) {
+      where.verified =
+        query.verified;
+    }
+
+    if (
+      query.official !==
+      undefined
+    ) {
+      where.official =
+        query.official;
+    }
+
     const [
       apps,
       total,
     ] =
       await Promise.all([
         this.prisma.uApp.findMany({
+          where,
           skip,
           take: safeLimit,
           orderBy: [
@@ -77,13 +195,16 @@ export class UAppsService {
           },
         }),
 
-        this.prisma.uApp.count(),
+        this.prisma.uApp.count({
+          where,
+        }),
       ]);
 
     return {
       items: apps.map(
         mapUApp,
       ),
+
       meta: {
         page: safePage,
         limit: safeLimit,

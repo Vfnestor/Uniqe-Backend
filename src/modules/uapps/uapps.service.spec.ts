@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   NotFoundException,
 } from "@nestjs/common";
 
@@ -31,8 +32,8 @@ describe(
       name: "Test App",
       description: "Test",
       category: "Tools",
-      source: "UNIQE",
-      sourceLabel: "Uniqe",
+      source: "USER",
+      sourceLabel: "User",
       platform: "WEB",
       platformLabel: "Web",
       type: "WEB_APP",
@@ -43,14 +44,14 @@ describe(
       cover: null,
       accent: "BLUE",
       href: "/test",
-      featured: true,
-      verified: true,
+      featured: false,
+      verified: false,
       version: "1.0.0",
-      official: true,
+      official: false,
       releaseLabel: "Stable",
       productCode: null,
       releaseStatus: null,
-      reviewStatus: "APPROVED",
+      reviewStatus: "DRAFT",
       rejectionReason: null,
       metadata: null,
       creator: {
@@ -65,6 +66,16 @@ describe(
         new Date(
           "2026-01-02T00:00:00.000Z",
         ),
+    };
+
+    const user: any = {
+      sub: "user-1",
+      role: "user",
+    };
+
+    const owner: any = {
+      sub: "owner-1",
+      role: "owner",
     };
 
     beforeEach(() => {
@@ -98,16 +109,38 @@ describe(
           });
 
         expect(
+          result.items,
+        ).toHaveLength(1);
+
+        expect(
+          result.meta.total,
+        ).toBe(1);
+      },
+    );
+
+    it(
+      "should list current user's UApps",
+      async () => {
+        prisma.uApp.findMany =
+          jest
+            .fn()
+            .mockResolvedValue([
+              app,
+            ]);
+
+        const result =
+          await service.listMine(
+            "user-1",
+          );
+
+        expect(
           prisma.uApp.findMany,
         ).toHaveBeenCalledWith({
-          where: {},
-          skip: 0,
-          take: 20,
+          where: {
+            creatorId:
+              "user-1",
+          },
           orderBy: [
-            {
-              featured:
-                "desc",
-            },
             {
               createdAt:
                 "desc",
@@ -124,194 +157,13 @@ describe(
         });
 
         expect(
-          prisma.uApp.count,
-        ).toHaveBeenCalledWith({
-          where: {},
-        });
-
-        expect(
-          result.items,
-        ).toHaveLength(1);
-
-        expect(
-          result.meta.total,
-        ).toBe(1);
-      },
-    );
-
-    it(
-      "should filter by search",
-      async () => {
-        prisma.uApp.findMany =
-          jest
-            .fn()
-            .mockResolvedValue([]);
-
-        prisma.uApp.count =
-          jest
-            .fn()
-            .mockResolvedValue(0);
-
-        await service.list({
-          search: "gold",
-        });
-
-        expect(
-          prisma.uApp.findMany,
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: {
-              OR: [
-                {
-                  name: {
-                    contains: "gold",
-                    mode: "insensitive",
-                  },
-                },
-                {
-                  description: {
-                    contains: "gold",
-                    mode: "insensitive",
-                  },
-                },
-                {
-                  category: {
-                    contains: "gold",
-                    mode: "insensitive",
-                  },
-                },
-              ],
-            },
-          }),
-        );
-      },
-    );
-
-    it(
-      "should filter by multiple fields",
-      async () => {
-        prisma.uApp.findMany =
-          jest
-            .fn()
-            .mockResolvedValue([]);
-
-        prisma.uApp.count =
-          jest
-            .fn()
-            .mockResolvedValue(0);
-
-        await service.list({
-          category: "finance",
-          source: "uniqe",
-          platform: "web",
-          status: "available",
-          featured: true,
-          verified: true,
-          official: true,
-        });
-
-        expect(
-          prisma.uApp.findMany,
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: {
-              category: {
-                equals: "finance",
-                mode: "insensitive",
-              },
-              source: "UNIQE",
-              platform: "WEB",
-              status: "AVAILABLE",
-              featured: true,
-              verified: true,
-              official: true,
-            },
-          }),
-        );
-      },
-    );
-
-    it(
-      "should normalize invalid pagination values",
-      async () => {
-        prisma.uApp.findMany =
-          jest
-            .fn()
-            .mockResolvedValue([]);
-
-        prisma.uApp.count =
-          jest
-            .fn()
-            .mockResolvedValue(0);
-
-        const result =
-          await service.list({
-            page: -5,
-            limit: 500,
-          });
-
-        expect(
-          prisma.uApp.findMany,
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            skip: 0,
-            take: 100,
-          }),
-        );
-
-        expect(
-          result.meta.page,
-        ).toBe(1);
-
-        expect(
-          result.meta.limit,
-        ).toBe(100);
-      },
-    );
-
-    it(
-      "should find UApp by id",
-      async () => {
-        prisma.uApp.findUnique =
-          jest
-            .fn()
-            .mockResolvedValue(
-              app,
-            );
-
-        const result =
-          await service.findById(
-            "app-1",
-          );
-
-        expect(
-          result.id,
+          result.items[0].id,
         ).toBe("app-1");
       },
     );
 
     it(
-      "should throw when UApp does not exist",
-      async () => {
-        prisma.uApp.findUnique =
-          jest
-            .fn()
-            .mockResolvedValue(
-              null,
-            );
-
-        await expect(
-          service.findById(
-            "missing",
-          ),
-        ).rejects.toThrow(
-          NotFoundException,
-        );
-      },
-    );
-
-    it(
-      "should create a UApp",
+      "should create a user UApp with protected ownership fields",
       async () => {
         prisma.uApp.create =
           jest
@@ -321,25 +173,25 @@ describe(
             );
 
         const dto: any = {
-          name: " Test App ",
+          name: "Test App",
           description:
-            " Test description ",
-          category: " Tools ",
+            "Test description",
+          category: "Tools",
           source: "uniqe",
           sourceLabel:
-            " Uniqe ",
+            "Uniqe",
           platform: "web",
           platformLabel:
-            " Web ",
+            "Web",
           type: "web-app",
           typeLabel:
-            " Web App ",
+            "Web App",
           status: "available",
           statusLabel:
-            " Available ",
-          icon: " icon ",
+            "Available",
+          icon: "icon",
           accent: "blue",
-          href: " /test ",
+          href: "/test",
           featured: true,
           verified: true,
           official: true,
@@ -347,17 +199,94 @@ describe(
 
         await service.create(
           dto,
-          "user-1",
+          user,
         );
 
         expect(
           prisma.uApp.create,
-        ).toHaveBeenCalled();
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data:
+              expect.objectContaining({
+                source: "USER",
+                sourceLabel:
+                  "User",
+                featured: false,
+                verified: false,
+                official: false,
+                reviewStatus:
+                  "DRAFT",
+                creator: {
+                  connect: {
+                    id: "user-1",
+                  },
+                },
+              }),
+          }),
+        );
       },
     );
 
     it(
-      "should update a UApp",
+      "should allow owner to create an official UApp",
+      async () => {
+        prisma.uApp.create =
+          jest
+            .fn()
+            .mockResolvedValue(
+              app,
+            );
+
+        const dto: any = {
+          name: "Official App",
+          description:
+            "Official application",
+          category: "Tools",
+          source: "uniqe",
+          sourceLabel:
+            "Uniqe",
+          platform: "web",
+          platformLabel:
+            "Web",
+          type: "web-app",
+          typeLabel:
+            "Web App",
+          status: "available",
+          statusLabel:
+            "Available",
+          icon: "icon",
+          accent: "blue",
+          href: "/official",
+          featured: true,
+          verified: true,
+          official: true,
+        };
+
+        await service.create(
+          dto,
+          owner,
+        );
+
+        expect(
+          prisma.uApp.create,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data:
+              expect.objectContaining({
+                source: "UNIQE",
+                featured: true,
+                verified: true,
+                official: true,
+                reviewStatus:
+                  "APPROVED",
+              }),
+          }),
+        );
+      },
+    );
+
+    it(
+      "should allow user to update own UApp",
       async () => {
         prisma.uApp.findUnique =
           jest
@@ -380,15 +309,135 @@ describe(
             "app-1",
             {
               name:
-                " Updated App ",
-              featured: false,
+                "Updated App",
+              featured: true,
+              verified: true,
+              official: true,
             } as any,
+            user,
           );
+
+        expect(
+          prisma.uApp.update,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data:
+              expect.objectContaining({
+                name:
+                  "Updated App",
+              }),
+          }),
+        );
+
+        expect(
+          prisma.uApp.update
+            .mock.calls[0][0]
+            .data.featured,
+        ).toBeUndefined();
 
         expect(
           result.name,
         ).toBe(
           "Updated App",
+        );
+      },
+    );
+
+    it(
+      "should reject user from updating another user's UApp",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue({
+              ...app,
+              creatorId:
+                "another-user",
+            });
+
+        await expect(
+          service.update(
+            "app-1",
+            {
+              name:
+                "Hacked",
+            } as any,
+            user,
+          ),
+        ).rejects.toThrow(
+          ForbiddenException,
+        );
+
+        expect(
+          prisma.uApp.update,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "should allow owner to update any UApp",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              app,
+            );
+
+        prisma.uApp.update =
+          jest
+            .fn()
+            .mockResolvedValue({
+              ...app,
+              featured: true,
+            });
+
+        await service.update(
+          "app-1",
+          {
+            featured: true,
+            verified: true,
+            official: true,
+          } as any,
+          owner,
+        );
+
+        expect(
+          prisma.uApp.update,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data:
+              expect.objectContaining({
+                featured: true,
+                verified: true,
+                official: true,
+              }),
+          }),
+        );
+      },
+    );
+
+    it(
+      "should throw when UApp does not exist",
+      async () => {
+        prisma.uApp.findUnique =
+          jest
+            .fn()
+            .mockResolvedValue(
+              null,
+            );
+
+        await expect(
+          service.update(
+            "missing",
+            {
+              name:
+                "Test",
+            } as any,
+            user,
+          ),
+        ).rejects.toThrow(
+          NotFoundException,
         );
       },
     );

@@ -1,6 +1,6 @@
 import {
   PrismaService,
-} from "../../src/database/prisma.service";
+} from "./prisma.service";
 
 describe("PrismaService", () => {
   let service: PrismaService;

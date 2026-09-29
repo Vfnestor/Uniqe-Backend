@@ -85,17 +85,17 @@ enum UAppReviewStatus {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  name      String
-  email     String     @unique
-  password  String
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
 
   avatarUrl String?
   status    UserStatus @default(ACTIVE)
   role      UserRole   @default(USER)
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   profile       UserProfile?
   preferences   UserPreferences?
@@ -107,25 +107,29 @@ model User {
 }
 
 model UserProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
+  id     String @id @default(cuid())
+  userId String @unique
 
   displayName String
   bio         String?
   avatarUrl   String?
 
-  language    String          @default("en")
-  theme       ThemePreference @default(SYSTEM)
+  language String          @default("en")
+  theme    ThemePreference @default(SYSTEM)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 }
 
 model UserPreferences {
-  id                   String          @id @default(cuid())
-  userId               String          @unique
+  id     String @id @default(cuid())
+  userId String @unique
 
   theme                ThemePreference @default(SYSTEM)
   language             String          @default("en")
@@ -134,12 +138,16 @@ model UserPreferences {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 }
 
 model Favorite {
-  id          String   @id @default(cuid())
-  userId      String
+  id     String @id @default(cuid())
+  userId String
 
   targetId    String
   title       String
@@ -154,14 +162,18 @@ model Favorite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([userId])
 }
 
 model Notification {
-  id       String   @id @default(cuid())
-  userId   String
+  id     String @id @default(cuid())
+  userId String
 
   category String
   title    String
@@ -176,24 +188,32 @@ model Notification {
   createdAt DateTime  @default(now())
   readAt   DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([userId])
   @@index([userId, read])
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
+  id        String @id @default(cuid())
   userId    String
   tokenHash String
-  tokenId   String    @unique
+  tokenId   String @unique
 
   expiresAt DateTime
   revokedAt DateTime?
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([userId])
   @@index([userId, revokedAt])
@@ -228,8 +248,8 @@ model UApp {
   featured Boolean @default(false)
   verified Boolean @default(false)
 
-  version     String?
-  official    Boolean @default(false)
+  version      String?
+  official     Boolean @default(false)
   releaseLabel String?
 
   productCode   String?

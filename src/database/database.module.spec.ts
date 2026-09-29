@@ -5,11 +5,11 @@ import {
 
 import {
   DatabaseModule,
-} from "../../src/database/database.module";
+} from "./database.module";
 
 import {
   PrismaService,
-} from "../../src/database/prisma.service";
+} from "./prisma.service";
 
 describe("DatabaseModule", () => {
   let moduleRef: TestingModule;

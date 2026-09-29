@@ -1,52 +1,39 @@
 import {
   PrismaService,
-} from "./prisma.service";
+} from "../../src/database/prisma.service";
 
 describe("PrismaService", () => {
   let service: PrismaService;
 
   beforeEach(() => {
-    service =
-      Object.create(
-        PrismaService.prototype,
-      ) as PrismaService;
-
-    (
-      service as any
-    ).$connect =
-      jest.fn();
-
-    (
-      service as any
-    ).$disconnect =
-      jest.fn();
+    service = new PrismaService();
   });
 
-  it("should connect on module init", async () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should be defined", () => {
+    expect(service).toBeDefined();
+  });
+
+  it("should connect on module initialization", async () => {
+    const connectSpy = jest
+      .spyOn(service, "$connect")
+      .mockResolvedValue(undefined);
+
     await service.onModuleInit();
 
-    expect(
-      (
-        service as any
-      ).$connect,
-    ).toHaveBeenCalledTimes(1);
+    expect(connectSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("should disconnect on module destroy", async () => {
+  it("should disconnect on module destruction", async () => {
+    const disconnectSpy = jest
+      .spyOn(service, "$disconnect")
+      .mockResolvedValue(undefined);
+
     await service.onModuleDestroy();
 
-    expect(
-      (
-        service as any
-      ).$disconnect,
-    ).toHaveBeenCalledTimes(1);
-  });
-
-  it("should expose PrismaService", () => {
-    expect(
-      service,
-    ).toBeInstanceOf(
-      PrismaService,
-    );
+    expect(disconnectSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -25,8 +25,8 @@ import {
 } from "./guards";
 
 import {
-  RbacController,
-} from "./rbac/rbac.controller";
+  RbacModule,
+} from "./rbac/rbac.module";
 
 @Module({
   imports: [
@@ -48,11 +48,12 @@ import {
           ),
       }),
     }),
+
+    RbacModule,
   ],
 
   controllers: [
     AuthController,
-    RbacController,
   ],
 
   providers: [

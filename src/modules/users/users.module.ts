@@ -3,6 +3,10 @@ import {
 } from "@nestjs/common";
 
 import {
+  AuthModule,
+} from "../auth";
+
+import {
   UsersController,
 } from "./users.controller";
 
@@ -11,12 +15,18 @@ import {
 } from "./users.service";
 
 @Module({
+  imports: [
+    AuthModule,
+  ],
+
   controllers: [
     UsersController,
   ],
+
   providers: [
     UsersService,
   ],
+
   exports: [
     UsersService,
   ],

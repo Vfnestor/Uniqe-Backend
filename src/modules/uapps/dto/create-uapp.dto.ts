@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import {
   IsBoolean,
   IsIn,
@@ -140,5 +142,5 @@ export class CreateUAppDto {
   releaseStatus?: string;
 
   @IsOptional()
-  metadata?: unknown;
+  metadata?: Prisma.InputJsonValue;
 }

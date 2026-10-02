@@ -114,14 +114,16 @@ export type UAppResponse = {
 };
 
 export type UAppWithCreator =
-  UApp & {
-    creator:
-      | Pick<
-          User,
-          "id" | "name"
-        >
-      | null;
-  };
+  Prisma.UAppGetPayload<{
+    include: {
+      creator: {
+        select: {
+          id: true;
+          name: true;
+        };
+      };
+    };
+  }>;
 
 export type UAppListResponse = {
   items: UAppResponse[];

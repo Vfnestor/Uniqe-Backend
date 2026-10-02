@@ -20,6 +20,7 @@ import {
 } from "./auth.service";
 
 import {
+  JwtAuthGuard,
   PermissionsGuard,
   RolesGuard,
 } from "./guards";
@@ -58,12 +59,14 @@ import {
 
   providers: [
     AuthService,
+    JwtAuthGuard,
     RolesGuard,
     PermissionsGuard,
   ],
 
   exports: [
     AuthService,
+    JwtAuthGuard,
     RolesGuard,
     PermissionsGuard,
     JwtModule,

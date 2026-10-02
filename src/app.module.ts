@@ -34,10 +34,6 @@ import {
   GlobalAuthGuard,
 } from "./common/guards";
 
-import {
-  JwtAuthGuard,
-} from "./modules/auth/guards";
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,8 +52,6 @@ import {
   ],
 
   providers: [
-    JwtAuthGuard,
-
     {
       provide:
         APP_GUARD,

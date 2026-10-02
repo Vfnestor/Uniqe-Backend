@@ -120,11 +120,7 @@ model UserProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserPreferences {
@@ -138,11 +134,7 @@ model UserPreferences {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Favorite {
@@ -162,11 +154,7 @@ model Favorite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -188,11 +176,7 @@ model Notification {
   createdAt DateTime  @default(now())
   readAt   DateTime?
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, read])
@@ -209,11 +193,7 @@ model RefreshToken {
 
   createdAt DateTime @default(now())
 
-  user User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, revokedAt])
@@ -266,12 +246,7 @@ model UApp {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creator User? @relation(
-    "UAppCreator",
-    fields: [creatorId],
-    references: [id],
-    onDelete: SetNull
-  )
+  creator User? @relation("UAppCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
   @@index([source])
   @@index([status])

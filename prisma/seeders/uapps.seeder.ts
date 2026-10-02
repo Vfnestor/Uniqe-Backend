@@ -1,4 +1,10 @@
-import type { PrismaClient } from "@prisma/client";
+import {
+  Prisma,
+} from "@prisma/client";
+
+import type {
+  PrismaClient,
+} from "@prisma/client";
 
 import {
   uAppsSeedData,
@@ -32,36 +38,50 @@ export async function seedUApps(
 
     const data = {
       name: app.name.trim(),
+
       description:
         app.description.trim(),
+
       category:
         app.category.trim(),
 
-      source: app.source,
+      source:
+        app.source,
+
       sourceLabel:
         app.sourceLabel.trim(),
 
-      platform: app.platform,
+      platform:
+        app.platform,
+
       platformLabel:
         app.platformLabel.trim(),
 
-      type: app.type,
+      type:
+        app.type,
+
       typeLabel:
         app.typeLabel.trim(),
 
-      status: app.status,
+      status:
+        app.status,
+
       statusLabel:
         app.statusLabel.trim(),
 
-      icon: app.icon.trim(),
+      icon:
+        app.icon.trim(),
+
       cover:
         normalizeNullableString(
           app.cover,
         ),
 
-      accent: app.accent,
+      accent:
+        app.accent,
 
-      href: app.href.trim(),
+      href:
+        app.href.trim(),
 
       featured:
         app.featured ?? false,
@@ -86,7 +106,8 @@ export async function seedUApps(
         app.productCode.trim(),
 
       releaseStatus:
-        app.releaseStatus ?? null,
+        app.releaseStatus ??
+        null,
 
       reviewStatus:
         app.reviewStatus ??
@@ -96,7 +117,9 @@ export async function seedUApps(
         null,
 
       metadata:
-        app.metadata ?? null,
+        app.metadata == null
+          ? Prisma.DbNull
+          : app.metadata as Prisma.InputJsonValue,
     };
 
     if (existing) {
@@ -104,6 +127,7 @@ export async function seedUApps(
         where: {
           id: existing.id,
         },
+
         data,
       });
 

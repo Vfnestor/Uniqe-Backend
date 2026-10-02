@@ -1,18 +1,17 @@
 import type {
+  UAppResponse,
   UAppWithCreator,
 } from "./uapps.types";
 
 export function mapUApp(
   app: UAppWithCreator,
-) {
+): UAppResponse {
   return {
     id: app.id,
 
     name: app.name,
-    description:
-      app.description,
-    category:
-      app.category,
+    description: app.description,
+    category: app.category,
 
     source:
       app.source
@@ -20,14 +19,14 @@ export function mapUApp(
         .replace(
           "_",
           "-",
-        ),
+        ) as UAppResponse["source"],
 
     sourceLabel:
       app.sourceLabel,
 
     platform:
       app.platform
-        .toLowerCase(),
+        .toLowerCase() as UAppResponse["platform"],
 
     platformLabel:
       app.platformLabel,
@@ -38,7 +37,7 @@ export function mapUApp(
         .replace(
           "_",
           "-",
-        ),
+        ) as UAppResponse["type"],
 
     typeLabel:
       app.typeLabel,
@@ -49,7 +48,7 @@ export function mapUApp(
         .replace(
           "_",
           "-",
-        ),
+        ) as UAppResponse["status"],
 
     statusLabel:
       app.statusLabel,
@@ -62,7 +61,7 @@ export function mapUApp(
 
     accent:
       app.accent
-        .toLowerCase(),
+        .toLowerCase() as UAppResponse["accent"],
 
     href:
       app.href,
@@ -92,7 +91,7 @@ export function mapUApp(
             .replace(
               "_",
               "-",
-            )
+            ) as UAppResponse["releaseStatus"]
         : null,
 
     reviewStatus:
@@ -101,7 +100,7 @@ export function mapUApp(
         .replace(
           "_",
           "-",
-        ),
+        ) as UAppResponse["reviewStatus"],
 
     rejectionReason:
       app.rejectionReason,

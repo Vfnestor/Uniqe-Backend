@@ -77,6 +77,57 @@ export class HttpExceptionFilter
       }
     }
 
+    // Log unexpected errors so the
+    // real cause is visible in Render.
+    if (
+      !(
+        exception instanceof
+        HttpException
+      )
+    ) {
+      console.error(
+        "===== UNHANDLED EXCEPTION =====",
+      );
+
+      if (
+        exception instanceof Error
+      ) {
+        console.error(
+          "Name:",
+          exception.name,
+        );
+
+        console.error(
+          "Message:",
+          exception.message,
+        );
+
+        console.error(
+          "Stack:",
+          exception.stack,
+        );
+      } else {
+        console.error(
+          "Exception:",
+          exception,
+        );
+      }
+
+      console.error(
+        "Method:",
+        request.method,
+      );
+
+      console.error(
+        "Path:",
+        request.url,
+      );
+
+      console.error(
+        "===== END UNHANDLED EXCEPTION =====",
+      );
+    }
+
     response.status(status).json({
       success: false,
       statusCode: status,

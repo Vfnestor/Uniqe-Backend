@@ -66,6 +66,7 @@ import {
     AuthService,
     RolesGuard,
     PermissionsGuard,
+    JwtModule,
   ],
 })
 export class AuthModule {}

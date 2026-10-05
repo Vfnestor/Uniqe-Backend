@@ -31,6 +31,10 @@ import {
 } from "./modules/uapps";
 
 import {
+  USchoolModule,
+} from "./modules/uschool";
+
+import {
   GlobalAuthGuard,
 } from "./common/guards";
 
@@ -49,6 +53,8 @@ import {
     UsersModule,
 
     UAppsModule,
+
+    USchoolModule,
   ],
 
   providers: [

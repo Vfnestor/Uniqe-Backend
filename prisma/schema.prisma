@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// USER / CORE
+// ============================================================
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -29,6 +33,10 @@ enum ThemePreference {
   LIGHT
   DARK
 }
+
+// ============================================================
+// UAPP
+// ============================================================
 
 enum UAppSource {
   USER
@@ -84,6 +92,110 @@ enum UAppReviewStatus {
   REJECTED
 }
 
+// ============================================================
+// U SCHOOL - COURSE
+// ============================================================
+
+enum UCourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum UCourseStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum UContentBlockType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  CODE
+  DIALOGUE
+  EXPLANATION
+  QUOTE
+  KNOWLEDGE_CARD
+  WARNING
+}
+
+enum UActivityType {
+  QUIZ
+  CHOICE
+  TRUE_FALSE
+  MATCH
+  ORDER
+  FILL_BLANK
+  WRITE
+  CODE
+  UPLOAD
+  PRACTICE
+}
+
+enum UMissionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum UEnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum USubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// ============================================================
+// U SCHOOL - KNOWLEDGE / SKILL
+// ============================================================
+
+enum UKnowledgeStatus {
+  LOCKED
+  DISCOVERED
+  LEARNED
+  MASTERED
+}
+
+enum USkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  MASTERED
+}
+
+// ============================================================
+// U SCHOOL - GAMIFICATION
+// ============================================================
+
+enum URewardType {
+  U_COIN
+  XP
+  BADGE
+}
+
+enum UTransactionType {
+  EARN
+  SPEND
+  ADJUSTMENT
+}
+
+// ============================================================
+// CORE USER MODEL
+// ============================================================
+
 model User {
   id       String @id @default(cuid())
   name     String
@@ -104,6 +216,23 @@ model User {
   refreshTokens RefreshToken[]
 
   createdUApps UApp[] @relation("UAppCreator")
+
+  createdCourses UCourse[] @relation("UCourseCreator")
+
+  enrollments       UEnrollment[]
+  courseProgress    UCourseProgress[]
+  lessonProgress    ULessonProgress[]
+  activityAttempts  UActivityAttempt[]
+  missionProgress   UMissionProgress[]
+  learningProfile   ULearningProfile?
+  studentKnowledge  UStudentKnowledge[]
+  studentSkills     UStudentSkill[]
+  studentProjects   UStudentProject[]
+  projectSubmissions UProjectSubmission[]
+  studentBadges     UStudentBadge[]
+  xpTransactions    UXPTransaction[]
+  coinTransactions  UCoinTransaction[]
+  wallet            UWallet?
 }
 
 model UserProfile {
@@ -165,7 +294,7 @@ model Notification {
 
   category String
   title    String
-  message  String
+  message String
 
   read Boolean @default(false)
 
@@ -173,7 +302,7 @@ model Notification {
   icon     String?
   metadata Json?
 
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
   readAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -199,6 +328,10 @@ model RefreshToken {
   @@index([userId, revokedAt])
   @@index([expiresAt])
 }
+
+// ============================================================
+// UAPP
+// ============================================================
 
 model UApp {
   id String @id @default(cuid())
@@ -229,7 +362,7 @@ model UApp {
   verified Boolean @default(false)
 
   version      String?
-  official     Boolean @default(false)
+  official     Boolean         @default(false)
   releaseLabel String?
 
   productCode   String?
@@ -254,4 +387,1062 @@ model UApp {
   @@index([creatorId])
   @@index([reviewStatus])
   @@index([featured])
+}
+
+// ============================================================
+// U SCHOOL - CATEGORY
+// ============================================================
+
+model UCategory {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+  description String?
+  icon        String?
+  cover       String?
+
+  parentId String?
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   UCategory?  @relation("UCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children UCategory[] @relation("UCategoryTree")
+
+  courses UCourseCategory[]
+
+  knowledgeItems UKnowledge[]
+
+  @@index([parentId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+// ============================================================
+// U SCHOOL - LEARNING STYLE
+// ============================================================
+
+model ULearningStyle {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+  description String?
+  icon        String?
+
+  rendererKey String
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses UCourse[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@index([rendererKey])
+}
+
+// ============================================================
+// U SCHOOL - COURSE
+// ============================================================
+
+model UCourse {
+  id String @id @default(cuid())
+
+  title           String
+  slug            String @unique
+  description     String?
+  shortDescription String?
+
+  cover     String?
+  thumbnail String?
+
+  level  UCourseLevel
+  status UCourseStatus @default(DRAFT)
+
+  learningStyleId String
+
+  creatorId String?
+
+  estimatedMinutes Int?
+  sortOrder        Int     @default(0)
+  featured         Boolean @default(false)
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User? @relation("UCourseCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  learningStyle ULearningStyle @relation(fields: [learningStyleId], references: [id], onDelete: Restrict)
+
+  categories UCourseCategory[]
+
+  theme UCourseTheme?
+
+  chapters UChapter[]
+
+  contentBlocks UContentBlock[]
+  activities    UActivity[]
+  missions      UMission[]
+
+  story UStory?
+
+  decisions UDecision[]
+
+  projects UProject[]
+
+  enrollments    UEnrollment[]
+  courseProgress UCourseProgress[]
+
+  characters UCharacter[]
+
+  @@index([status])
+  @@index([level])
+  @@index([learningStyleId])
+  @@index([creatorId])
+  @@index([featured])
+}
+
+// ============================================================
+// COURSE <-> CATEGORY
+// ============================================================
+
+model UCourseCategory {
+  courseId   String
+  categoryId String
+
+  course   UCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  category UCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, categoryId])
+  @@index([categoryId])
+}
+
+// ============================================================
+// U SCHOOL - COURSE THEME
+// ============================================================
+
+model UCourseTheme {
+  id String @id @default(cuid())
+
+  courseId String @unique
+
+  name        String?
+  themeKey    String?
+
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+
+  backgroundColor String?
+  surfaceColor    String?
+  textColor       String?
+
+  fontFamily String?
+
+  visualStyle String?
+
+  heroImage       String?
+  backgroundImage  String?
+  backgroundVideo  String?
+
+  borderRadius String?
+
+  customCss Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// U SCHOOL - CHAPTER
+// ============================================================
+
+model UChapter {
+  id String @id @default(cuid())
+
+  courseId String
+
+  title       String
+  slug        String
+  description String?
+  cover       String?
+
+  sortOrder Int     @default(0)
+
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons  ULesson[]
+  missions UMission[]
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([sortOrder])
+}
+
+// ============================================================
+// U SCHOOL - LESSON
+// ============================================================
+
+model ULesson {
+  id String @id @default(cuid())
+
+  chapterId String
+
+  title       String
+  slug        String
+  description String?
+
+  sortOrder        Int @default(0)
+  estimatedMinutes Int?
+
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chapter UChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  contentBlocks UContentBlock[]
+  activities    UActivity[]
+  missions      UMission[]
+
+  lessonProgress ULessonProgress[]
+
+  @@unique([chapterId, slug])
+  @@index([chapterId])
+  @@index([sortOrder])
+}
+
+// ============================================================
+// U SCHOOL - CONTENT BLOCK
+// ============================================================
+
+model UContentBlock {
+  id String @id @default(cuid())
+
+  courseId String?
+  lessonId  String?
+
+  type UContentBlockType
+
+  title   String?
+  content String?
+  data    Json?
+
+  sortOrder Int @default(0)
+
+  isRequired Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson ULesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([lessonId])
+  @@index([type])
+}
+
+// ============================================================
+// U SCHOOL - ACTIVITY
+// ============================================================
+
+model UActivity {
+  id String @id @default(cuid())
+
+  courseId String?
+  lessonId  String?
+
+  type UActivityType
+
+  title        String
+  instructions String?
+
+  data Json?
+
+  sortOrder Int @default(0)
+
+  points      Int @default(0)
+  maxAttempts Int?
+
+  isRequired Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson ULesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  attempts UActivityAttempt[]
+
+  @@index([courseId])
+  @@index([lessonId])
+  @@index([type])
+}
+
+// ============================================================
+// ACTIVITY ATTEMPT
+// ============================================================
+
+model UActivityAttempt {
+  id String @id @default(cuid())
+
+  activityId String
+  userId     String
+
+  answer Json?
+
+  isCorrect Boolean?
+  score     Int @default(0)
+
+  attemptNumber Int
+
+  feedback String?
+
+  createdAt DateTime @default(now())
+
+  activity UActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@index([userId])
+  @@index([userId, activityId])
+}
+
+// ============================================================
+// U SCHOOL - MISSION
+// ============================================================
+
+model UMission {
+  id String @id @default(cuid())
+
+  courseId String
+  chapterId String?
+  lessonId String?
+
+  title       String
+  description String?
+  instructions String?
+
+  sortOrder Int @default(0)
+
+  isRequired Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  UCourse  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter UChapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  lesson  ULesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  progress UMissionProgress[]
+
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([lessonId])
+}
+
+// ============================================================
+// MISSION PROGRESS
+// ============================================================
+
+model UMissionProgress {
+  id String @id @default(cuid())
+
+  userId    String
+  missionId String
+
+  status UMissionStatus @default(NOT_STARTED)
+
+  score Int @default(0)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  attempts Int @default(0)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission UMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
+  @@index([userId])
+  @@index([missionId])
+  @@index([status])
+}
+
+// ============================================================
+// U SCHOOL - STORY
+// ============================================================
+
+model UStory {
+  id String @id @default(cuid())
+
+  courseId String @unique
+
+  title       String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  scenes UStoryScene[]
+}
+
+// ============================================================
+// STORY SCENE
+// ============================================================
+
+model UStoryScene {
+  id String @id @default(cuid())
+
+  storyId String
+
+  title       String
+  description String?
+
+  backgroundImage String?
+  backgroundVideo String?
+
+  sortOrder Int @default(0)
+
+  isStartScene Boolean @default(false)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  story UStory @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  dialogues UDialogue[]
+  choices   UChoice[]
+
+  @@index([storyId])
+  @@index([sortOrder])
+}
+
+// ============================================================
+// CHARACTER
+// ============================================================
+
+model UCharacter {
+  id String @id @default(cuid())
+
+  courseId String
+
+  name        String
+  description String?
+
+  avatar String?
+  role   String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  dialogues UDialogue[]
+
+  @@index([courseId])
+}
+
+// ============================================================
+// DIALOGUE
+// ============================================================
+
+model UDialogue {
+  id String @id @default(cuid())
+
+  sceneId     String
+  characterId String
+
+  text String
+
+  sortOrder Int @default(0)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  scene     UStoryScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  character UCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+  @@index([characterId])
+}
+
+// ============================================================
+// CHOICE
+// ============================================================
+
+model UChoice {
+  id String @id @default(cuid())
+
+  sceneId String
+
+  title       String
+  description String?
+
+  sortOrder Int @default(0)
+
+  nextSceneId String?
+
+  decisionId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  scene UStoryScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+  @@index([nextSceneId])
+  @@index([decisionId])
+}
+
+// ============================================================
+// DECISION ENGINE
+// ============================================================
+
+model UDecision {
+  id String @id @default(cuid())
+
+  courseId String?
+
+  title       String
+  situation  String
+
+  sortOrder Int @default(0)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  choices UDecisionChoice[]
+
+  outcomes UDecisionOutcome[]
+
+  @@index([courseId])
+}
+
+// ============================================================
+// DECISION CHOICE
+// ============================================================
+
+model UDecisionChoice {
+  id String @id @default(cuid())
+
+  decisionId String
+
+  title       String
+  description String?
+
+  sortOrder Int @default(0)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  decision UDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  outcomes UDecisionOutcome[]
+
+  @@index([decisionId])
+}
+
+// ============================================================
+// DECISION OUTCOME
+// ============================================================
+
+model UDecisionOutcome {
+  id String @id @default(cuid())
+
+  decisionId       String
+  decisionChoiceId String?
+
+  title       String
+  description String?
+
+  score Int @default(0)
+
+  nextSceneId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  decision UDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  decisionChoice UDecisionChoice? @relation(fields: [decisionChoiceId], references: [id], onDelete: Cascade)
+
+  @@index([decisionId])
+  @@index([decisionChoiceId])
+}
+
+// ============================================================
+// KNOWLEDGE
+// ============================================================
+
+model UKnowledge {
+  id String @id @default(cuid())
+
+  title       String
+  slug        String @unique
+  description String?
+  content     String?
+
+  icon String?
+
+  categoryId String?
+
+  difficulty String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category UCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  studentKnowledge UStudentKnowledge[]
+
+  @@index([categoryId])
+}
+
+// ============================================================
+// STUDENT KNOWLEDGE
+// ============================================================
+
+model UStudentKnowledge {
+  id String @id @default(cuid())
+
+  userId      String
+  knowledgeId String
+
+  status UKnowledgeStatus @default(LOCKED)
+
+  progress Int @default(0)
+
+  discoveredAt DateTime?
+  learnedAt    DateTime?
+  masteredAt   DateTime?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledge UKnowledge @relation(fields: [knowledgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, knowledgeId])
+  @@index([userId])
+  @@index([knowledgeId])
+  @@index([status])
+}
+
+// ============================================================
+// SKILL
+// ============================================================
+
+model USkill {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+  description String?
+
+  categoryId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category UCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  studentSkills UStudentSkill[]
+
+  @@index([categoryId])
+}
+
+// ============================================================
+// STUDENT SKILL
+// ============================================================
+
+model UStudentSkill {
+  id String @id @default(cuid())
+
+  userId  String
+  skillId String
+
+  level USkillLevel @default(BEGINNER)
+
+  progress Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill USkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+}
+
+// ============================================================
+// PROJECT
+// ============================================================
+
+model UProject {
+  id String @id @default(cuid())
+
+  courseId String
+
+  title        String
+  description  String?
+  instructions String?
+
+  type         String?
+  requirements Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  studentProjects UStudentProject[]
+
+  @@index([courseId])
+}
+
+// ============================================================
+// STUDENT PROJECT
+// ============================================================
+
+model UStudentProject {
+  id String @id @default(cuid())
+
+  projectId String
+  userId    String
+
+  title       String
+  description String?
+
+  status String @default("IN_PROGRESS")
+
+  workspace Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project UProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  submissions UProjectSubmission[]
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+// ============================================================
+// PROJECT SUBMISSION
+// ============================================================
+
+model UProjectSubmission {
+  id String @id @default(cuid())
+
+  studentProjectId String
+  userId           String
+
+  version Int @default(1)
+
+  content Json?
+
+  status USubmissionStatus @default(DRAFT)
+
+  feedback String?
+
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProject UStudentProject @relation(fields: [studentProjectId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studentProjectId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================
+// ENROLLMENT
+// ============================================================
+
+model UEnrollment {
+  id String @id @default(cuid())
+
+  userId   String
+  courseId String
+
+  status UEnrollmentStatus @default(ACTIVE)
+
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  lastAccessedAt DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+// ============================================================
+// COURSE PROGRESS
+// ============================================================
+
+model UCourseProgress {
+  id String @id @default(cuid())
+
+  userId   String
+  courseId String
+
+  percentage Float @default(0)
+
+  completedLessons    Int @default(0)
+  completedActivities Int @default(0)
+  completedMissions   Int @default(0)
+
+  lastLessonId   String?
+  lastActivityId String?
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course UCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+// ============================================================
+// LESSON PROGRESS
+// ============================================================
+
+model ULessonProgress {
+  id String @id @default(cuid())
+
+  userId   String
+  lessonId String
+
+  percentage Float @default(0)
+
+  isCompleted Boolean @default(false)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson ULesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+}
+
+// ============================================================
+// LEARNING PROFILE
+// ============================================================
+
+model ULearningProfile {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  totalCoursesCompleted Int @default(0)
+  totalProjectsCompleted Int @default(0)
+
+  totalXP Int @default(0)
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// REWARD
+// ============================================================
+
+model UReward {
+  id String @id @default(cuid())
+
+  type URewardType
+
+  title       String
+  description String?
+
+  amount Int @default(0)
+
+  badgeId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  badge UBadge? @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([badgeId])
+}
+
+// ============================================================
+// BADGE
+// ============================================================
+
+model UBadge {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String @unique
+  description String?
+
+  icon  String?
+  image String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rewards UReward[]
+
+  students UStudentBadge[]
+}
+
+// ============================================================
+// STUDENT BADGE
+// ============================================================
+
+model UStudentBadge {
+  id String @id @default(cuid())
+
+  userId  String
+  badgeId String
+
+  awardedAt DateTime @default(now())
+
+  metadata Json?
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge UBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
+// ============================================================
+// XP TRANSACTION
+// ============================================================
+
+model UXPTransaction {
+  id String @id @default(cuid())
+
+  userId String
+
+  amount Int
+
+  reason String?
+
+  referenceType String?
+  referenceId   String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([referenceType, referenceId])
+}
+
+// ============================================================
+// WALLET
+// ============================================================
+
+model UWallet {
+  id String @id @default(cuid())
+
+  userId String @unique
+
+  balance Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions UCoinTransaction[]
+}
+
+// ============================================================
+// U COIN TRANSACTION
+// ============================================================
+
+model UCoinTransaction {
+  id String @id @default(cuid())
+
+  userId   String
+  walletId String
+
+  amount Int
+
+  type UTransactionType
+
+  reason String?
+
+  referenceType String?
+  referenceId   String?
+
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet UWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([walletId])
+  @@index([type])
+  @@index([referenceType, referenceId])
 }

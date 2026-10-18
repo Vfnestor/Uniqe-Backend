@@ -8,12 +8,9 @@ export function mapSearchResult(
 ): SearchResult {
   return {
     id: input.id,
-
     type: input.type,
-
     title: input.title,
-
-    description: input.description,
+    description: input.description || "",
 
     ...(input.category
       ? {

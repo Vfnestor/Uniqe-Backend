@@ -25,3 +25,9 @@ export type SearchResultInput = {
   icon?: string;
   updatedAt: Date;
 };
+
+export type SearchResponse = {
+  query: string;
+  total: number;
+  results: SearchResult[];
+};

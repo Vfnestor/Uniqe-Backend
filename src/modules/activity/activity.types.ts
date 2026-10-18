@@ -7,3 +7,9 @@ export type ActivityItem = {
   href?: string;
   createdAt: string;
 };
+
+export type ActivityListResponse = {
+  items: ActivityItem[];
+  total: number;
+  limit: number;
+};

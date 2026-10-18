@@ -43,6 +43,10 @@ import {
 } from "./modules/notifications/notifications.module";
 
 import {
+  SearchModule,
+} from "./modules/search/search.module";
+
+import {
   GlobalAuthGuard,
 } from "./common/guards";
 
@@ -67,12 +71,13 @@ import {
     FavoritesModule,
 
     NotificationsModule,
+
+    SearchModule,
   ],
 
   providers: [
     {
       provide: APP_GUARD,
-
       useClass: GlobalAuthGuard,
     },
   ],

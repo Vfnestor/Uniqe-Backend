@@ -35,6 +35,14 @@ import {
 } from "./modules/uschool";
 
 import {
+  FavoritesModule,
+} from "./modules/favorites/favorites.module";
+
+import {
+  NotificationsModule,
+} from "./modules/notifications/notifications.module";
+
+import {
   GlobalAuthGuard,
 } from "./common/guards";
 
@@ -55,15 +63,17 @@ import {
     UAppsModule,
 
     USchoolModule,
+
+    FavoritesModule,
+
+    NotificationsModule,
   ],
 
   providers: [
     {
-      provide:
-        APP_GUARD,
+      provide: APP_GUARD,
 
-      useClass:
-        GlobalAuthGuard,
+      useClass: GlobalAuthGuard,
     },
   ],
 })

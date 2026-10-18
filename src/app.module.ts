@@ -47,6 +47,10 @@ import {
 } from "./modules/search/search.module";
 
 import {
+  ActivityModule,
+} from "./modules/activity/activity.module";
+
+import {
   GlobalAuthGuard,
 } from "./common/guards";
 
@@ -73,6 +77,8 @@ import {
     NotificationsModule,
 
     SearchModule,
+
+    ActivityModule,
   ],
 
   providers: [

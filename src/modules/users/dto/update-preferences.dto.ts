@@ -13,6 +13,9 @@ export class UpdatePreferencesDto {
     "SYSTEM",
     "LIGHT",
     "DARK",
+    "system",
+    "light",
+    "dark",
   ])
   theme?: string;
 

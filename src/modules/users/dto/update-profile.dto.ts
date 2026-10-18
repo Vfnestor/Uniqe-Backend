@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -30,6 +31,13 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @IsIn([
+    "SYSTEM",
+    "LIGHT",
+    "DARK",
+    "system",
+    "light",
+    "dark",
+  ])
   theme?: string;
 }

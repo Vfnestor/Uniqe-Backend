@@ -19,6 +19,7 @@ import {
 } from "./search.mapper";
 
 import type {
+  SearchResponse,
   SearchResult,
 } from "./search.types";
 
@@ -30,25 +31,27 @@ export class SearchService {
 
   async search(
     query: SearchQueryDto,
-  ): Promise<{
-    query: string;
-    total: number;
-    results: SearchResult[];
-  }> {
+  ): Promise<SearchResponse> {
     const searchTerm =
       query.q.trim();
 
-    const limit = Math.min(
-      50,
-      Math.max(
-        1,
-        query.limit ?? 20,
-      ),
-    );
+    const requestedLimit =
+      Number(query.limit ?? 20);
+
+    const limit =
+      Number.isFinite(requestedLimit)
+        ? Math.min(
+            50,
+            Math.max(
+              1,
+              Math.trunc(requestedLimit),
+            ),
+          )
+        : 20;
 
     if (!searchTerm) {
       return {
-        query: searchTerm,
+        query: "",
         total: 0,
         results: [],
       };
@@ -59,28 +62,55 @@ export class SearchService {
       mode: Prisma.QueryMode.insensitive,
     } as const;
 
+    const appWhere = {
+      reviewStatus: "APPROVED",
+      OR: [
+        { name: contains },
+        { description: contains },
+        { category: contains },
+      ],
+    } satisfies Prisma.UAppWhereInput;
+
+    const courseWhere = {
+      status: "PUBLISHED",
+      OR: [
+        { title: contains },
+        { description: contains },
+        { shortDescription: contains },
+        { slug: contains },
+      ],
+    } satisfies Prisma.UCourseWhereInput;
+
+    const categoryWhere = {
+      isActive: true,
+      OR: [
+        { name: contains },
+        { description: contains },
+        { slug: contains },
+      ],
+    } satisfies Prisma.UCategoryWhereInput;
+
+    const knowledgeWhere = {
+      OR: [
+        { title: contains },
+        { description: contains },
+        { content: contains },
+        { slug: contains },
+      ],
+    } satisfies Prisma.UKnowledgeWhereInput;
+
     const [
       apps,
       courses,
       categories,
       knowledge,
+      appsCount,
+      coursesCount,
+      categoriesCount,
+      knowledgeCount,
     ] = await Promise.all([
       this.prisma.uApp.findMany({
-        where: {
-          reviewStatus: "APPROVED",
-          OR: [
-            {
-              name: contains,
-            },
-            {
-              description: contains,
-            },
-            {
-              category: contains,
-            },
-          ],
-        },
-
+        where: appWhere,
         select: {
           id: true,
           name: true,
@@ -90,33 +120,14 @@ export class SearchService {
           icon: true,
           updatedAt: true,
         },
-
         orderBy: {
           updatedAt: "desc",
         },
-
         take: limit,
       }),
 
       this.prisma.uCourse.findMany({
-        where: {
-          status: "PUBLISHED",
-          OR: [
-            {
-              title: contains,
-            },
-            {
-              description: contains,
-            },
-            {
-              shortDescription: contains,
-            },
-            {
-              slug: contains,
-            },
-          ],
-        },
-
+        where: courseWhere,
         select: {
           id: true,
           title: true,
@@ -127,7 +138,6 @@ export class SearchService {
           thumbnail: true,
           updatedAt: true,
         },
-
         orderBy: [
           {
             featured: "desc",
@@ -136,26 +146,11 @@ export class SearchService {
             updatedAt: "desc",
           },
         ],
-
         take: limit,
       }),
 
       this.prisma.uCategory.findMany({
-        where: {
-          isActive: true,
-          OR: [
-            {
-              name: contains,
-            },
-            {
-              description: contains,
-            },
-            {
-              slug: contains,
-            },
-          ],
-        },
-
+        where: categoryWhere,
         select: {
           id: true,
           name: true,
@@ -165,7 +160,6 @@ export class SearchService {
           cover: true,
           updatedAt: true,
         },
-
         orderBy: [
           {
             sortOrder: "asc",
@@ -174,28 +168,11 @@ export class SearchService {
             updatedAt: "desc",
           },
         ],
-
         take: limit,
       }),
 
       this.prisma.uKnowledge.findMany({
-        where: {
-          OR: [
-            {
-              title: contains,
-            },
-            {
-              description: contains,
-            },
-            {
-              content: contains,
-            },
-            {
-              slug: contains,
-            },
-          ],
-        },
-
+        where: knowledgeWhere,
         select: {
           id: true,
           title: true,
@@ -204,12 +181,26 @@ export class SearchService {
           icon: true,
           updatedAt: true,
         },
-
         orderBy: {
           updatedAt: "desc",
         },
-
         take: limit,
+      }),
+
+      this.prisma.uApp.count({
+        where: appWhere,
+      }),
+
+      this.prisma.uCourse.count({
+        where: courseWhere,
+      }),
+
+      this.prisma.uCategory.count({
+        where: categoryWhere,
+      }),
+
+      this.prisma.uKnowledge.count({
+        where: knowledgeWhere,
       }),
     ]);
 
@@ -222,7 +213,7 @@ export class SearchService {
           description: item.description,
           category: item.category,
           href: item.href,
-          icon: item.icon,
+          icon: item.icon ?? undefined,
           updatedAt: item.updatedAt,
         }),
       ),
@@ -236,7 +227,8 @@ export class SearchService {
             item.shortDescription ||
             item.description ||
             "",
-          href: `/uschool/courses/${item.slug}`,
+          href:
+            `/uschool/courses/${item.slug}`,
           icon:
             item.thumbnail ||
             item.cover ||
@@ -252,7 +244,8 @@ export class SearchService {
           title: item.name,
           description:
             item.description || "",
-          href: `/uschool?category=${encodeURIComponent(item.slug)}`,
+          href:
+            `/uschool?category=${encodeURIComponent(item.slug)}`,
           icon:
             item.icon ||
             item.cover ||
@@ -268,26 +261,29 @@ export class SearchService {
           title: item.title,
           description:
             item.description || "",
-          href: `/uschool/knowledge/${item.slug}`,
-          icon: item.icon || undefined,
+          href:
+            `/uschool/knowledge/${item.slug}`,
+          icon:
+            item.icon || undefined,
           updatedAt: item.updatedAt,
         }),
       ),
     ];
 
     results.sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() -
-        new Date(a.updatedAt).getTime(),
+      (first, second) =>
+        new Date(second.updatedAt).getTime() -
+        new Date(first.updatedAt).getTime(),
     );
-
-    const limitedResults =
-      results.slice(0, limit);
 
     return {
       query: searchTerm,
-      total: limitedResults.length,
-      results: limitedResults,
+      total:
+        appsCount +
+        coursesCount +
+        categoriesCount +
+        knowledgeCount,
+      results: results.slice(0, limit),
     };
   }
 }

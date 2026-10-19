@@ -11,6 +11,7 @@ import {
 } from "./auth.service";
 
 import {
+  AdminLoginDto,
   LoginDto,
   LogoutDto,
   RefreshTokenDto,
@@ -55,6 +56,22 @@ export class AuthController {
     @Body() dto: LoginDto,
   ) {
     return this.authService.login(
+      dto,
+    );
+  }
+
+  /**
+   * ورود اختصاصی مدیر.
+   *
+   * مسیر نهایی با global prefix:
+   * POST /api/v1/auth/admin/login
+   */
+  @Post("admin/login")
+  @Public()
+  async loginAdmin(
+    @Body() dto: AdminLoginDto,
+  ) {
+    return this.authService.loginAdmin(
       dto,
     );
   }

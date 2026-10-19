@@ -13,20 +13,25 @@ export function mapAuthUser(
     id: user.id,
     name: user.name,
     email: user.email,
+
     role:
       user.role === "ADMIN"
         ? "owner"
         : "user",
+
     status:
       user.status === "ACTIVE"
         ? "active"
         : user.status === "SUSPENDED"
           ? "suspended"
           : "inactive",
+
     avatarUrl:
       user.avatarUrl,
+
     createdAt:
       user.createdAt.toISOString(),
+
     updatedAt:
       user.updatedAt.toISOString(),
   };

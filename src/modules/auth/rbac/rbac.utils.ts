@@ -90,3 +90,21 @@ export function hasAllPermissions(
       ),
   );
 }
+
+export function isOwnerRole(
+  role: string,
+): boolean {
+  return (
+    normalizeRole(role) ===
+    RBAC_ROLES.OWNER
+  );
+}
+
+export function isUserRole(
+  role: string,
+): boolean {
+  return (
+    normalizeRole(role) ===
+    RBAC_ROLES.USER
+  );
+}

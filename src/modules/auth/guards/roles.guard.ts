@@ -66,7 +66,7 @@ export class RolesGuard
 
     if (!user) {
       throw new ForbiddenException(
-        "User role is unavailable.",
+        "Authenticated user is required.",
       );
     }
 

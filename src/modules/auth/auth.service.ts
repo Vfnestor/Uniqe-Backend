@@ -64,9 +64,7 @@ export class AuthService {
     dto: RegisterDto,
   ): Promise<AuthResult> {
     const email =
-      dto.email
-        .trim()
-        .toLowerCase();
+      dto.email.trim().toLowerCase();
 
     const existingUser =
       await this.prisma.user.findUnique({
@@ -90,8 +88,7 @@ export class AuthService {
     const user =
       await this.prisma.user.create({
         data: {
-          name:
-            dto.name.trim(),
+          name: dto.name.trim(),
           email,
           password,
           status: "ACTIVE",
@@ -104,13 +101,64 @@ export class AuthService {
     );
   }
 
+  /**
+   * ورود عادی.
+   *
+   * اعتبارنامه کاربر در پایگاه داده بررسی می‌شود.
+   * نقش حساب از پایگاه داده می‌آید، نه از فرم ورود.
+   */
   async login(
     dto: LoginDto,
   ): Promise<AuthResult> {
+    const user =
+      await this.verifyCredentials(
+        dto.email,
+        dto.password,
+      );
+
+    return this.createAuthResult(
+      user,
+    );
+  }
+
+  /**
+   * ورود اختصاصی مالک/مدیر اصلی.
+   *
+   * فقط حسابی که نقش ADMIN در پایگاه داده دارد
+   * می‌تواند از این مسیر توکن دریافت کند.
+   */
+  async loginAdmin(
+    dto: LoginDto,
+  ): Promise<AuthResult> {
+    const user =
+      await this.verifyCredentials(
+        dto.email,
+        dto.password,
+      );
+
+    if (user.role !== "ADMIN") {
+      throw new UnauthorizedException(
+        "Invalid email or password.",
+      );
+    }
+
+    return this.createAuthResult(
+      user,
+    );
+  }
+
+  /**
+   * بررسی مشترک ایمیل، رمز عبور و وضعیت حساب.
+   *
+   * از این تابع هم برای ورود عادی و هم ورود مدیر
+   * استفاده می‌شود تا منطق اعتبارسنجی دوگانه نشود.
+   */
+  private async verifyCredentials(
+    rawEmail: string,
+    password: string,
+  ): Promise<User> {
     const email =
-      dto.email
-        .trim()
-        .toLowerCase();
+      rawEmail.trim().toLowerCase();
 
     const user =
       await this.prisma.user.findUnique({
@@ -125,18 +173,15 @@ export class AuthService {
       );
     }
 
-    if (
-      user.status !==
-      "ACTIVE"
-    ) {
+    if (user.status !== "ACTIVE") {
       throw new UnauthorizedException(
-        "User account is not active.",
+        "Invalid email or password.",
       );
     }
 
     const passwordMatches =
       await compare(
-        dto.password,
+        password,
         user.password,
       );
 
@@ -146,9 +191,7 @@ export class AuthService {
       );
     }
 
-    return this.createAuthResult(
-      user,
-    );
+    return user;
   }
 
   async refresh(
@@ -168,8 +211,7 @@ export class AuthService {
         await this.jwtService.verifyAsync<JwtRefreshPayload>(
           dto.refreshToken,
           {
-            secret:
-              refreshSecret,
+            secret: refreshSecret,
           },
         );
     } catch {
@@ -179,8 +221,7 @@ export class AuthService {
     }
 
     if (
-      payload.type !==
-        "refresh" ||
+      payload.type !== "refresh" ||
       !payload.sub ||
       !payload.jti
     ) {
@@ -202,8 +243,7 @@ export class AuthService {
     if (
       !storedToken ||
       storedToken.revokedAt ||
-      storedToken.expiresAt <=
-        new Date()
+      storedToken.expiresAt <= new Date()
     ) {
       throw new UnauthorizedException(
         "Refresh token is no longer valid.",
@@ -211,8 +251,7 @@ export class AuthService {
     }
 
     if (
-      storedToken.userId !==
-      payload.sub
+      storedToken.userId !== payload.sub
     ) {
       throw new UnauthorizedException(
         "Refresh token subject is invalid.",
@@ -232,8 +271,7 @@ export class AuthService {
     }
 
     if (
-      storedToken.user.status !==
-      "ACTIVE"
+      storedToken.user.status !== "ACTIVE"
     ) {
       throw new UnauthorizedException(
         "User account is not active.",
@@ -245,8 +283,7 @@ export class AuthService {
         id: storedToken.id,
       },
       data: {
-        revokedAt:
-          new Date(),
+        revokedAt: new Date(),
       },
     });
 
@@ -267,8 +304,7 @@ export class AuthService {
 
     if (
       !user ||
-      user.status !==
-        "ACTIVE"
+      user.status !== "ACTIVE"
     ) {
       throw new UnauthorizedException(
         "User session is invalid.",
@@ -277,10 +313,7 @@ export class AuthService {
 
     return {
       authenticated: true,
-      user:
-        mapAuthUser(
-          user,
-        ),
+      user: mapAuthUser(user),
     };
   }
 
@@ -297,29 +330,30 @@ export class AuthService {
         await this.jwtService.verifyAsync<JwtRefreshPayload>(
           dto.refreshToken,
           {
-            secret:
-              refreshSecret,
+            secret: refreshSecret,
           },
         );
 
       if (
-        payload.type ===
-          "refresh" &&
+        payload.type === "refresh" &&
         payload.jti
       ) {
         await this.prisma.refreshToken.updateMany({
           where: {
-            tokenId:
-              payload.jti,
+            tokenId: payload.jti,
             revokedAt: null,
           },
           data: {
-            revokedAt:
-              new Date(),
+            revokedAt: new Date(),
           },
         });
       }
-    } catch {}
+    } catch {
+      /*
+       * خروج باید حتی در صورت نامعتبر بودن
+       * توکن قدیمی نیز پاسخ قابل پیش‌بینی بدهد.
+       */
+    }
 
     return {
       success: true,
@@ -385,17 +419,13 @@ export class AuthService {
       data: {
         userId: user.id,
         tokenId,
-        tokenHash:
-          refreshTokenHash,
+        tokenHash: refreshTokenHash,
         expiresAt,
       },
     });
 
     return {
-      user:
-        mapAuthUser(
-          user,
-        ),
+      user: mapAuthUser(user),
       tokens: {
         accessToken,
         refreshToken,
